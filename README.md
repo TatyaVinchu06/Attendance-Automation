@@ -1,4 +1,4 @@
-# AI-Based Automated Attendance & Classroom Emotion Analytics System
+# Automated Attendance & Classroom Emotion Analytics System
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -17,9 +17,6 @@ A comprehensive AI-powered system for automating classroom attendance using face
 - **📸 Live Camera Feed**: Real-time camera preview with manual "Upload Photo" analysis
 - **⚙️ Advanced Tools**: Student management (Delete/Retrain) and System Cleanup
 
-## 📸 Screenshots
-
-*(Add screenshots of your application here after running it)*
 
 ## 🚀 Quick Start
 
