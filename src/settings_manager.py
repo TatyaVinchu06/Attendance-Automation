@@ -8,7 +8,8 @@ DEFAULT_SETTINGS = {
     "analysis_interval": 30,  # Minutes
     "attendance_interval": 60, # Minutes
     "email_enabled": True,
-    "theme": "Dark"
+    "theme": "Dark",
+    "faculty_emails": {}
 }
 
 class SettingsManager:

@@ -1,0 +1,16 @@
+{
+    "analysis_interval": 30,
+    "attendance_interval": 60,
+    "email_enabled": true,
+    "theme": "Dark",
+    "faculty_emails": {
+        "DBMS": "ombhamare06@gmail.com",
+        "MP": "",
+        "DAA": "",
+        "DTS": "",
+        "ED": "",
+        "OE": "",
+        "ADPL": "",
+        "DBMSL": ""
+    }
+}

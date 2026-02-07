@@ -134,7 +134,7 @@ class ReportGenerator:
                 f.write("\n")
                 f.write("=" * 70 + "\n")
                 f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write("AI-Based Attendance & Emotion Analytics System\n")
+                f.write("Attendance & Emotion Analytics System\n")
                 f.write("=" * 70 + "\n")
             
             logger.info(f"TXT report generated: {filepath}")
@@ -230,7 +230,7 @@ class ReportGenerator:
             doc.add_paragraph()
             footer = doc.add_paragraph()
             footer.add_run(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n").italic = True
-            footer.add_run("AI-Based Attendance & Emotion Analytics System").italic = True
+            footer.add_run("Attendance & Emotion Analytics System").italic = True
             footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
             # Save document

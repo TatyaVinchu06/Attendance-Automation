@@ -80,6 +80,7 @@ class EmailAutomation:
         try:
             # Get recipient email
             if recipient_email is None:
+                # Try to get from arguments first, then config (fallback)
                 recipient_email = get_faculty_email(subject)
             
             # Prepare email content
@@ -100,7 +101,7 @@ Dear Faculty,
 
 Please find attached the attendance report for {subject} on {date_str}.
 
-This is an automated email from the AI-Based Attendance System.
+This is an automated email from the Attendance System.
 
 Best regards,
 Attendance System

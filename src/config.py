@@ -125,7 +125,7 @@ Session Details:
 Class Emotion Summary:
 {emotion_summary}
 
-This is an automated email from the AI-Based Attendance System.
+This is an automated email from the Attendance System.
 
 Best regards,
 Attendance System
@@ -138,14 +138,14 @@ Attendance System
 # Subject to faculty email mapping
 # Subject to faculty email mapping
 TIMETABLE = {
-    "DBMS": "ombhamer06@gmail.com",
-    "OS": "ombhamer06@gmail.com",
-    "AI": "ombhamer06@gmail.com",
-    "ML": "ombhamer06@gmail.com",
-    "DSA": "ombhamer06@gmail.com",
-    "CN": "ombhamer06@gmail.com",
-    "SE": "ombhamer06@gmail.com",
-    "TOC": "ombhamer06@gmail.com",
+    "DBMS": "",
+    "MP": "",
+    "DAA": "",
+    "DTS": "",
+    "ED": "",
+    "OE": "",
+    "ADPL": "",
+    "DBMSL": ""
 }
 
 # Default fallback email (if subject not in timetable)
@@ -185,7 +185,7 @@ AUTO_SAVE_INTERVAL = 60
 # ====================================================================
 
 # Window settings
-WINDOW_TITLE = "AI-Based Attendance & Emotion Analytics System"
+WINDOW_TITLE = "Attendance & Emotion Analytics System"
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 WINDOW_RESIZABLE = True
@@ -259,7 +259,7 @@ def is_email_configured():
 APP_NAME = "AI Attendance System"
 APP_VERSION = "1.0.0"
 APP_AUTHOR = "Your Name"
-APP_DESCRIPTION = "AI-Based Automated Attendance & Classroom Emotion Analytics System"
+APP_DESCRIPTION = "Automated Attendance & Classroom Emotion Analytics System"
 
 # Status messages
 STATUS_READY = "Ready"

@@ -104,7 +104,7 @@ class AttendanceApp(ctk.CTk):
         
         title_frame = ctk.CTkFrame(logo_frame, fg_color="transparent")
         title_frame.pack(side="left", padx=10)
-        ctk.CTkLabel(title_frame, text="AI ATTENDANCE", 
+        ctk.CTkLabel(title_frame, text="ATTENDANCE", 
                     font=ctk.CTkFont(family=FONT_FAMILY, size=18, weight="bold"),
                     text_color=THEME_COLORS['text']).pack(anchor="w")
         ctk.CTkLabel(title_frame, text="PRO EDITION", 
@@ -440,78 +440,126 @@ class AttendanceApp(ctk.CTk):
         self.clear_content()
         self.current_page = "settings"
         
-        container = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        container.pack(fill="both", expand=True, padx=30, pady=30)
+        # Simple scrollable container
+        container = ctk.CTkScrollableFrame(self.main_frame, fg_color="transparent")
+        container.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+
+        ctk.CTkLabel(container, text="⚙️ System Configuration", 
+                    font=ctk.CTkFont(size=28, weight="bold")).pack(anchor="w", pady=(0, 30))
+
+        # ===== GENERAL SETTINGS =====
+        gen_card = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=15)
+        gen_card.pack(fill="x", pady=(0, 20))
         
-        ctk.CTkLabel(container, text="System Notification Settings", 
-                    font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 20))
+        ctk.CTkLabel(gen_card, text="General Settings", 
+                    font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=20, pady=(20, 15))
         
-        # Automation Settings
-        automation_card = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=15)
-        automation_card.pack(fill="x", pady=20)
+        # Email enable checkbox (using CTkCheckBox instead of CTkSwitch)
+        self.email_checkbox = ctk.CTkCheckBox(gen_card, text="Enable Email Reports")
+        if self.settings_manager.get("email_enabled"):
+            self.email_checkbox.select()
+        self.email_checkbox.pack(anchor="w", padx=20, pady=10)
         
-        ctk.CTkLabel(automation_card, text="⏱ Automated Attendance Intervals", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(anchor="w", padx=20, pady=(20, 10))
+        # Automation Intervals
+        ctk.CTkLabel(gen_card, text="Automation Intervals (Minutes)", 
+                    font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=(20, 10))
         
         # Analysis Interval
-        row1 = ctk.CTkFrame(automation_card, fg_color="transparent")
-        row1.pack(fill="x", padx=20, pady=5)
-        ctk.CTkLabel(row1, text="Face Analysis Frequency (minutes):").pack(side="left")
-        self.analysis_interval = ctk.CTkEntry(row1, width=60)
-        self.analysis_interval.pack(side="right")
+        ana_frame = ctk.CTkFrame(gen_card, fg_color="transparent")
+        ana_frame.pack(fill="x", padx=20, pady=5)
+        ctk.CTkLabel(ana_frame, text="Face Analysis Every:", width=200, anchor="w").pack(side="left")
+        self.analysis_interval = ctk.CTkEntry(ana_frame, width=80)
         self.analysis_interval.insert(0, str(self.settings_manager.get("analysis_interval")))
-
+        self.analysis_interval.pack(side="left", padx=10)
+        
         # Attendance Interval
-        row2 = ctk.CTkFrame(automation_card, fg_color="transparent")
-        row2.pack(fill="x", padx=20, pady=5)
-        ctk.CTkLabel(row2, text="Mark Attendance Frequency (minutes):").pack(side="left")
-        self.attendance_interval = ctk.CTkEntry(row2, width=60)
-        self.attendance_interval.pack(side="right")
+        att_frame = ctk.CTkFrame(gen_card, fg_color="transparent")
+        att_frame.pack(fill="x", padx=20, pady=(5, 20))
+        ctk.CTkLabel(att_frame, text="Mark Attendance Every:", width=200, anchor="w").pack(side="left")
+        self.attendance_interval = ctk.CTkEntry(att_frame, width=80)
         self.attendance_interval.insert(0, str(self.settings_manager.get("attendance_interval")))
+        self.attendance_interval.pack(side="left", padx=10)
+
+        # ===== SMTP SETTINGS =====
+        smtp_card = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=15)
+        smtp_card.pack(fill="x", pady=(0, 20))
         
-        # Settings Card (Email)
-        card = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=15)
-        card.pack(fill="x")
+        ctk.CTkLabel(smtp_card, text="📧 Email Configuration", 
+                    font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=20, pady=(20, 10))
         
-        # Header
-        ctk.CTkLabel(card, text="📧 Email Configuration", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(anchor="w", padx=20, pady=(20, 10))
-        
-        ctk.CTkLabel(card, text="Configure Gmail SMTP settings for automated attendance reports.", 
-                    text_color="gray").pack(anchor="w", padx=20, pady=(0, 20))
-        
-        # Inputs
-        ctk.CTkLabel(card, text="Sender Email Address", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", padx=20, pady=(0, 5))
-        self.email_entry = ctk.CTkEntry(card, placeholder_text="example@gmail.com", height=40, border_color=THEME_COLORS['border'])
-        self.email_entry.pack(fill="x", padx=20, pady=(0, 15))
-        self.email_entry.delete(0, 'end')
+        ctk.CTkLabel(smtp_card, text="Sender Email:", anchor="w", 
+                    font=ctk.CTkFont(weight="bold")).pack(fill="x", padx=20, pady=(10, 5))
+        self.email_entry = ctk.CTkEntry(smtp_card, height=35)
         self.email_entry.insert(0, self.email_automation.sender_email)
+        self.email_entry.pack(fill="x", padx=20, pady=(0, 15))
         
-        ctk.CTkLabel(card, text="App Password (Not login password)", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", padx=20, pady=(0, 5))
-        self.pass_entry = ctk.CTkEntry(card, placeholder_text="xxxx xxxx xxxx xxxx", show="*", height=40, border_color=THEME_COLORS['border'])
-        self.pass_entry.pack(fill="x", padx=20, pady=(0, 15))
-        self.pass_entry.delete(0, 'end')
+        ctk.CTkLabel(smtp_card, text="App Password:", anchor="w", 
+                    font=ctk.CTkFont(weight="bold")).pack(fill="x", padx=20, pady=(0, 5))
+        self.pass_entry = ctk.CTkEntry(smtp_card, show="*", height=35)
         self.pass_entry.insert(0, self.email_automation.sender_password)
+        self.pass_entry.pack(fill="x", padx=20, pady=(0, 20))
+
+        # ===== FACULTY EMAILS =====
+        fac_card = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=15)
+        fac_card.pack(fill="x", pady=(0, 20))
         
-        def save():
+        ctk.CTkLabel(fac_card, text="👨‍🏫 Faculty Email Configuration", 
+                    font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=20, pady=(20, 15))
+        
+        ctk.CTkLabel(fac_card, text="Set email addresses for each subject to receive attendance reports:", 
+                    text_color="gray").pack(anchor="w", padx=20, pady=(0, 15))
+        
+        # Grid for subject emails
+        email_grid = ctk.CTkFrame(fac_card, fg_color="transparent")
+        email_grid.pack(fill="x", padx=20, pady=(0, 20))
+        email_grid.grid_columnconfigure(1, weight=1)
+        
+        self.fac_entries = {}
+        saved_emails = self.settings_manager.get("faculty_emails") or {}
+        subjects = get_all_subjects()
+        
+        for i, sub in enumerate(subjects):
+            ctk.CTkLabel(email_grid, text=f"{sub}:", anchor="w", width=80,
+                        font=ctk.CTkFont(weight="bold")).grid(row=i, column=0, padx=10, pady=8, sticky="w")
+            entry = ctk.CTkEntry(email_grid, placeholder_text=f"faculty@example.com", height=35)
+            val = saved_emails.get(sub, "")
+            if val:
+                entry.insert(0, val)
+            entry.grid(row=i, column=1, padx=10, pady=8, sticky="ew")
+            self.fac_entries[sub] = entry
+
+        # ===== SAVE BUTTON =====
+        def save_settings():
             try:
-                # Save Email
-                email = self.email_entry.get().strip()
-                pwd = self.pass_entry.get().strip()
-                self.email_automation.update_credentials(email, pwd)
+                # Save general settings
+                self.settings_manager.set("email_enabled", self.email_checkbox.get() == 1)
+                self.settings_manager.set("analysis_interval", int(self.analysis_interval.get()))
+                self.settings_manager.set("attendance_interval", int(self.attendance_interval.get()))
                 
-                # Save Automation
-                ana_int = int(self.analysis_interval.get())
-                att_int = int(self.attendance_interval.get())
-                self.settings_manager.set("analysis_interval", ana_int)
-                self.settings_manager.set("attendance_interval", att_int)
+                # Save SMTP
+                self.email_automation.update_credentials(
+                    self.email_entry.get().strip(), 
+                    self.pass_entry.get().strip()
+                )
                 
-                messagebox.showinfo("Saved", "Settings saved successfully!")
+                # Save faculty emails
+                fac_map = {}
+                for sub, entry in self.fac_entries.items():
+                    fac_map[sub] = entry.get().strip()
+                self.settings_manager.set("faculty_emails", fac_map)
+                
+                messagebox.showinfo("Success", "✅ All settings saved successfully!")
+                logger.info("Settings saved successfully")
             except ValueError:
-                messagebox.showerror("Error", "Intervals must be numbers!")
-            
-        ctk.CTkButton(card, text="Save Configuration", command=save, height=45, 
-                     fg_color=THEME_COLORS['primary'], font=ctk.CTkFont(weight="bold")).pack(fill="x", padx=20, pady=20)
+                messagebox.showerror("Error", "❌ Intervals must be valid numbers.")
+            except Exception as e:
+                logger.error(f"Settings save error: {e}")
+                messagebox.showerror("Error", f"❌ Failed to save: {str(e)}")
+
+        ctk.CTkButton(container, text="💾 Save All Settings", command=save_settings, 
+                     height=50, font=ctk.CTkFont(size=16, weight="bold"),
+                     fg_color=THEME_COLORS['primary'], 
+                     hover_color=THEME_COLORS['success']).pack(fill="x", pady=(10, 20))
 
     def show_reports(self):
         self.clear_content()
@@ -622,6 +670,12 @@ class AttendanceApp(ctk.CTk):
                                                height=50, fg_color=THEME_COLORS['primary'], hover_color=THEME_COLORS['primary_dark'],
                                                font=ctk.CTkFont(weight="bold"))
         self.enroll_capture_btn.pack(fill="x", pady=10)
+        
+        # Upload Photos Button
+        self.enroll_upload_btn = ctk.CTkButton(left_panel, text="📁 UPLOAD PHOTOS", command=self.upload_enrollment_photos,
+                                               height=50, fg_color=THEME_COLORS['secondary'], hover_color="#7c3aed",
+                                               font=ctk.CTkFont(weight="bold"))
+        self.enroll_upload_btn.pack(fill="x", pady=10)
 
         self.enroll_save_btn = ctk.CTkButton(left_panel, text="💾 SAVE PROFILE", command=self.save_enrollment,
                                             height=50, fg_color=THEME_COLORS['success'], hover_color="#059669",
@@ -779,6 +833,73 @@ class AttendanceApp(ctk.CTk):
             logger.error(f"Enrollment error: {e}")
             messagebox.showerror("Error", str(e))
 
+    def upload_enrollment_photos(self):
+        """Upload photos from disk for enrollment (alternative to camera capture)"""
+        try:
+            # Open file dialog to select multiple images
+            file_paths = filedialog.askopenfilenames(
+                title="Select Student Photos (Up to 5)",
+                filetypes=[
+                    ("Image Files", "*.jpg *.jpeg *.png *.bmp"),
+                    ("All Files", "*.*")
+                ],
+                parent=self
+            )
+            
+            if not file_paths:
+                return  # User cancelled
+            
+            # Limit to 5 total images
+            current_count = len(self.enrollment_images)
+            available_slots = 5 - current_count
+            
+            if available_slots <= 0:
+                messagebox.showwarning("Limit Reached", "You already have 5 images. Reset the form to upload new ones.")
+                return
+            
+            # Process selected files
+            added_count = 0
+            for file_path in file_paths[:available_slots]:
+                try:
+                    # Validate it's a valid image
+                    img = cv2.imread(file_path)
+                    if img is None:
+                        logger.warning(f"Invalid image: {file_path}")
+                        continue
+                    
+                    # Copy to temp location with timestamp
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                    temp_filename = f"enroll_upload_{timestamp}_{added_count}.jpg"
+                    temp_path = os.path.join(IMAGES_DIR, temp_filename)
+                    
+                    # Save copy
+                    cv2.imwrite(temp_path, img)
+                    self.enrollment_images.append(temp_path)
+                    added_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {file_path}: {e}")
+                    continue
+            
+            # Update UI
+            if added_count > 0:
+                total_count = len(self.enrollment_images)
+                self.enroll_count_label.configure(text=f"Progress: {total_count}/5 Images")
+                self.progress_bar.set(total_count / 5)
+                
+                if total_count >= 5:
+                    self.enroll_capture_btn.configure(state="disabled")
+                    self.enroll_upload_btn.configure(state="disabled")
+                    messagebox.showinfo("Ready", f"✅ {added_count} photo(s) uploaded!\n\nTotal: {total_count}/5\nYou can now save and enroll.")
+                else:
+                    messagebox.showinfo("Success", f"✅ {added_count} photo(s) uploaded!\n\nTotal: {total_count}/5\nYou can upload more or save now.")
+            else:
+                messagebox.showerror("Error", "No valid images were uploaded. Please select valid image files.")
+                
+        except Exception as e:
+            logger.error(f"Upload photos error: {e}")
+            messagebox.showerror("Error", f"Failed to upload photos: {str(e)}")
+
     def clear_enrollment(self):
         """Clear enrollment form and images"""
         # Delete temp images
@@ -795,6 +916,7 @@ class AttendanceApp(ctk.CTk):
         if hasattr(self, 'enroll_count_label'): self.enroll_count_label.configure(text="Progress: 0/5 Images Captured")
         if hasattr(self, 'progress_bar'): self.progress_bar.set(0)
         if hasattr(self, 'enroll_capture_btn'): self.enroll_capture_btn.configure(state="normal")
+        if hasattr(self, 'enroll_upload_btn'): self.enroll_upload_btn.configure(state="normal")
         if hasattr(self, 'enroll_save_btn'): self.enroll_save_btn.configure(state="normal")
 
     def show_student_database(self):
@@ -1173,45 +1295,36 @@ class AttendanceApp(ctk.CTk):
             # Pass first image to report
             selected_image = images[0] if images else None
             
-            # Correct parameter order: attendance, emotion_summary, subject, time_start, time_end
             time_str = timestamp.strftime("%H:%M:%S")
             report_path = self.report_generator.generate_report(
                 all_attendance, emotion_summary, subject, time_str, time_str, 
                 report_format='both', image_path=selected_image
             )
-
+            
             # 5. Email (Handle gracefully)
-            if EMAIL_ENABLED:
-                if self.email_automation.is_configured():
-                    try:
-                        self.update_status("Sending Email...", "blue")
-                        num_present = sum(1 for status in all_attendance.values() if status == 'Present')
-                        
-                        # Add image to attachments
-                        attachments = report_path + images
-                        
-                        self.email_automation.send_attendance_email(
-                            subject=subject,
-                            date_str=timestamp.strftime("%Y-%m-%d"),
-                            time_str=timestamp.strftime("%H:%M"),
-                            total_students=len(self.face_recognition.get_all_students()),
-                            present_count=num_present,
-                            absent_count=len(self.face_recognition.get_all_students()) - num_present,
-                            emotion_summary=str(emotion_summary),
-                            report_path=attachments,
-                            recipient_email=get_faculty_email(subject)
-                        )
-                    except Exception as e:
-                        logger.error(f"Email failed: {e}")
-                        # Don't crash, just log/user know
-                        self.after(0, lambda: messagebox.showwarning("Email Pending", "Attendance marked but email failed.\nCheck config."))
-                else:
-                     logger.info("Email not configured, skipping.")
+            if self.settings_manager.get("email_enabled"):
+                try:
+                    self.update_status("Sending Email...", "blue")
+                    
+                    # Get dynamic email from settings or config
+                    saved_emails = self.settings_manager.get("faculty_emails") or {}
+                    recipient = saved_emails.get(subject, "")
+                    final_recipient = recipient if recipient else None
+                    
+                    if self.email_automation.send_attendance_report(subject, report_path, recipient_email=final_recipient):
+                         logger.info(f"Email sent to {final_recipient}")
+                    else:
+                         logger.warning("Email failed or not configured")
+                         
+                except Exception as e:
+                    logger.error(f"Email error: {e}")
+                    # Don't crash main thread
             
             self.update_status("Done!", "green")
             self.after(0, lambda: messagebox.showinfo("Success", f"Marked {len(all_attendance)} students."))
             
         except Exception as e:
+            logger.error(f"Process error: {e}")
             self.update_status("Error", "red")
             self.after(0, lambda: messagebox.showerror("Error", str(e)))
         finally:
