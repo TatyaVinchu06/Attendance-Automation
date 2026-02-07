@@ -5,7 +5,8 @@ Built with CustomTkinter for a premium Windows 11-style look.
 """
 
 import customtkinter as ctk
-from tkinter import messagebox, filedialog
+from tkinter import filedialog
+import custom_dialogs as messagebox
 import tkinter as tk
 from PIL import Image, ImageTk
 import cv2
@@ -55,9 +56,9 @@ class AttendanceApp(ctk.CTk):
         self.face_recognition = FaceRecognitionModule()
         self.emotion_detection = EmotionDetection()
         self.report_generator = ReportGenerator()
-        self.email_automation = EmailAutomation()
-        self.data_cleanup = DataCleanup()
         self.settings_manager = SettingsManager()
+        self.email_automation = EmailAutomation(self.settings_manager)
+        self.data_cleanup = DataCleanup()
         
         # State
         self.camera_active = False
@@ -174,6 +175,12 @@ class AttendanceApp(ctk.CTk):
     def show_dashboard(self):
         self.clear_content()
         self.current_page = "dashboard"
+        
+        # Reset grid configuration (other pages may have changed it)
+        self.main_frame.columnconfigure(0, weight=1)
+        self.main_frame.columnconfigure(1, weight=0)
+        self.main_frame.columnconfigure(2, weight=0)
+        self.main_frame.rowconfigure(0, weight=1)
         
         # Main Scrollable Content
         content = ctk.CTkScrollableFrame(self.main_frame, fg_color="transparent")
@@ -431,10 +438,6 @@ class AttendanceApp(ctk.CTk):
         
         ctk.CTkLabel(info, text=name, font=ctk.CTkFont(weight="bold")).pack(anchor="w")
         ctk.CTkLabel(info, text=f"{time} • {emotion}", font=ctk.CTkFont(size=11), text_color="gray").pack(anchor="w")
-        
-        # Status Label for Feedback
-        self.status_label = ctk.CTkLabel(ctrl_frame, text="Ready", text_color="gray")
-        self.status_label.pack(side="bottom", pady=20)
 
     def show_settings(self):
         self.clear_content()
@@ -616,8 +619,40 @@ class AttendanceApp(ctk.CTk):
         ctk.CTkLabel(info, text=f"Generated: {date_str}", font=ctk.CTkFont(size=11), text_color="gray").pack(anchor="w")
 
         # Actions
+        ctk.CTkButton(card, text="🗑️ Delete", width=90, 
+                     command=lambda f=filename: self.delete_report(f),
+                     fg_color=THEME_COLORS['danger'], hover_color="#dc2626").pack(side="right", padx=5)
+        
         ctk.CTkButton(card, text="Open", width=80, command=lambda: os.startfile(os.path.join(REPORTS_DIR, filename)),
                      fg_color=THEME_COLORS['background'], hover_color=THEME_COLORS['primary']).pack(side="right", padx=15)
+
+    def delete_report(self, filename):
+        """Delete a report file with confirmation"""
+        # Confirm deletion
+        confirm = messagebox.askyesno(
+            "Confirm Delete", 
+            f"Are you sure you want to delete this report?\n\n{filename}\n\nThis action cannot be undone."
+        )
+        
+        if not confirm:
+            return
+        
+        try:
+            # Delete the file
+            filepath = os.path.join(REPORTS_DIR, filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                logger.info(f"Deleted report: {filename}")
+                messagebox.showinfo("Success", f"Report deleted successfully!\n\n{filename}")
+                
+                # Refresh the reports page
+                self.show_reports()
+            else:
+                messagebox.showerror("Error", "Report file not found!")
+                
+        except Exception as e:
+            logger.error(f"Error deleting report: {e}")
+            messagebox.showerror("Error", f"Failed to delete report:\n{str(e)}")
 
     def show_enrollment(self):
         """Modern split-view enrollment page"""
@@ -962,11 +997,11 @@ class AttendanceApp(ctk.CTk):
         # Columns: Profile(0), Roll(1), Name(2), Status(3), Actions(4)
         # Weights: 1, 2, 3, 1, 1
         
-        table_header.columnconfigure(0, weight=1)
-        table_header.columnconfigure(1, weight=2)
-        table_header.columnconfigure(2, weight=3)
-        table_header.columnconfigure(3, weight=1)
-        table_header.columnconfigure(4, weight=1)
+        table_header.columnconfigure(0, weight=1, minsize=80)
+        table_header.columnconfigure(1, weight=2, minsize=150)
+        table_header.columnconfigure(2, weight=3, minsize=200)
+        table_header.columnconfigure(3, weight=1, minsize=100)
+        table_header.columnconfigure(4, weight=1, minsize=100)
 
         headers = ["PROFILE", "ROLL NUMBER", "FULL NAME", "STATUS", "ACTIONS"]
         for i, text in enumerate(headers):
@@ -989,11 +1024,11 @@ class AttendanceApp(ctk.CTk):
         row.pack(fill="x", pady=2)
         
         # Match Grid Config with Header
-        row.columnconfigure(0, weight=1)
-        row.columnconfigure(1, weight=2)
-        row.columnconfigure(2, weight=3)
-        row.columnconfigure(3, weight=1)
-        row.columnconfigure(4, weight=1)
+        row.columnconfigure(0, weight=1, minsize=80)
+        row.columnconfigure(1, weight=2, minsize=150)
+        row.columnconfigure(2, weight=3, minsize=200)
+        row.columnconfigure(3, weight=1, minsize=100)
+        row.columnconfigure(4, weight=1, minsize=100)
         
         try:
             roll, name = student_id.split('_', 1)
@@ -1076,22 +1111,78 @@ class AttendanceApp(ctk.CTk):
             # Analyze
             attendance = self.face_recognition.recognize_faces(file_path)
             
-            if attendance:
-                # Show results
-                msg = "Faces Found:\n" + "\n".join([f"- {name}: {status}" for name, status in attendance.items()])
-                messagebox.showinfo("Analysis Result", msg)
-                
-                # Mark Attendance
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                for name, status in attendance.items():
-                   if status == "Present":
-                       self.update_recent_feed(name, timestamp)
-            else:
+            if not attendance:
                 messagebox.showwarning("No Faces", "No known students detected in the image.")
+                return
+            
+            # Show results
+            msg = "Faces Found:\n" + "\n".join([f"- {name}: {status}" for name, status in attendance.items()])
+            messagebox.showinfo("Analysis Result", msg)
+            
+            # Mark Attendance in feed
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            for name, status in attendance.items():
+               if status == "Present":
+                   self.update_recent_feed(name, timestamp)
+            
+            # Ask user to select subject for report generation
+            from tkinter import simpledialog
+            subjects = list(TIMETABLE.values())
+            
+            subject_dialog = ctk.CTkInputDialog(
+                text=f"Select subject for this attendance:\n\nAvailable: {', '.join(subjects)}\n\nEnter subject name:",
+                title="Select Subject"
+            )
+            subject = subject_dialog.get_input()
+            
+            if not subject or subject.strip() == "":
+                # User cancelled or didn't enter anything
+                messagebox.showinfo("Info", "✅ Attendance marked!\n\n⚠️ No report generated (subject not selected)")
+                return
+            
+            subject = subject.strip().upper()
+            
+            # Generate reports and send email
+            try:
+                time_now = datetime.now().strftime("%H:%M:%S")
+                
+                # Generate report
+                report_paths = self.report_generator.generate_report(
+                    attendance=attendance,
+                    emotion_summary={},  # No emotion data from manual upload
+                    subject=subject,
+                    time_start=time_now,
+                    time_end=time_now,
+                    report_format='both'
+                )
+                
+                if report_paths:
+                    logger.info(f"Reports generated: {report_paths}")
+                    
+                    # Send email if enabled
+                    if self.settings_manager.get("email_enabled"):
+                        saved_emails = self.settings_manager.get("faculty_emails") or {}
+                        recipient = saved_emails.get(subject, "")
+                        
+                        if recipient:  # Only try to send if recipient is configured
+                            if self.email_automation.send_attendance_report(subject, report_paths, recipient_email=recipient):
+                                logger.info(f"Email sent successfully to {recipient}")
+                                messagebox.showinfo("Success", f"✅ Report generated and email sent to {recipient}!\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+                            else:
+                                messagebox.showinfo("Success", f"✅ Report generated!\n\n⚠️ Email failed to send\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+                        else:
+                            # No recipient configured for Manual Upload
+                            messagebox.showinfo("Success", f"✅ Report generated!\n\n💡 Tip: Configure faculty email for 'Manual Upload' in Settings to auto-send reports\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+                    else:
+                        messagebox.showinfo("Success", f"✅ Report generated!\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+                
+            except Exception as e:
+                logger.error(f"Report/Email error: {e}")
+                messagebox.showwarning("Partial Success", f"✅ Attendance marked\n⚠️ Report generation failed: {str(e)}")
                 
         except Exception as e:
             logger.error(f"Upload error: {e}")
-            messagebox.showerror("Error", f"Analysis failed: {e}")
+            messagebox.showerror("Error", f"Analysis failed: {str(e)}")
 
     def show_cleanup(self):
         self.clear_content()

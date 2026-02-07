@@ -9,7 +9,9 @@ DEFAULT_SETTINGS = {
     "attendance_interval": 60, # Minutes
     "email_enabled": True,
     "theme": "Dark",
-    "faculty_emails": {}
+    "faculty_emails": {},
+    "sender_email": "",
+    "sender_password": ""
 }
 
 class SettingsManager:

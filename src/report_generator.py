@@ -21,6 +21,19 @@ class ReportGenerator:
     def __init__(self):
         pass
     
+    def _format_student_name(self, student_id):
+        """Format student ID like '1_Rakesh_bare' to 'Roll No: 1, Name: Rakesh bare'"""
+        try:
+            parts = student_id.split('_')
+            if len(parts) >= 2:
+                roll_no = parts[0]
+                name = ' '.join(parts[1:])  # Join all parts after roll number
+                return f"Roll No: {roll_no}, Name: {name}"
+            else:
+                return student_id
+        except Exception as e:
+            return student_id
+    
     def generate_report(self, attendance, emotion_summary, subject, time_start, time_end, report_format='both', image_path=None):
         """
         Generate attendance report
@@ -106,7 +119,8 @@ class ReportGenerator:
                 
                 if present:
                     for i, name in enumerate(sorted(present), 1):
-                        f.write(f"{i}. {name}\n")
+                        formatted_name = self._format_student_name(name)
+                        f.write(f"{i}. {formatted_name}\n")
                 else:
                     f.write("No students present\n")
                 
@@ -117,19 +131,23 @@ class ReportGenerator:
                 
                 if absent:
                     for i, name in enumerate(sorted(absent), 1):
-                        f.write(f"{i}. {name}\n")
+                        formatted_name = self._format_student_name(name)
+                        f.write(f"{i}. {formatted_name}\n")
                 else:
                     f.write("No students absent\n")
                 
-                if emotion_summary:
-                    f.write("\n")
-                    f.write("-" * 70 + "\n")
-                    f.write("CLASS EMOTION SUMMARY\n")
-                    f.write("-" * 70 + "\n\n")
-                    
+                # Always show emotion summary section
+                f.write("\n")
+                f.write("-" * 70 + "\n")
+                f.write("CLASS EMOTION SUMMARY\n")
+                f.write("-" * 70 + "\n\n")
+                
+                if emotion_summary and len(emotion_summary) > 0:
                     for emotion, percentage in emotion_summary.items():
                         bar = "█" * int(percentage / 5)
                         f.write(f"{emotion:12} {percentage:5.1f}%  {bar}\n")
+                else:
+                    f.write("No emotion data available (manual upload)\n")
                 
                 f.write("\n")
                 f.write("=" * 70 + "\n")
@@ -205,7 +223,8 @@ class ReportGenerator:
             doc.add_heading('Present Students', 1)
             if present:
                 for i, name in enumerate(sorted(present), 1):
-                    doc.add_paragraph(f"{i}. {name}", style='List Number')
+                    formatted_name = self._format_student_name(name)
+                    doc.add_paragraph(f"{i}. {formatted_name}", style='List Number')
             else:
                 doc.add_paragraph("No students present")
             
@@ -213,18 +232,20 @@ class ReportGenerator:
             doc.add_heading('Absent Students', 1)
             if absent:
                 for i, name in enumerate(sorted(absent), 1):
-                    doc.add_paragraph(f"{i}. {name}", style='List Number')
+                    formatted_name = self._format_student_name(name)
+                    doc.add_paragraph(f"{i}. {formatted_name}", style='List Number')
             else:
                 doc.add_paragraph("No students absent")
             
-            # Emotion summary
-            if emotion_summary:
-                doc.add_heading('Class Emotion Summary', 1)
-                
+            # Emotion summary - always show section
+            doc.add_heading('Class Emotion Summary', 1)
+            if emotion_summary and len(emotion_summary) > 0:
                 for emotion, percentage in emotion_summary.items():
                     p = doc.add_paragraph()
                     p.add_run(f"{emotion}: ").bold = True
                     p.add_run(f"{percentage:.1f}%")
+            else:
+                doc.add_paragraph("No emotion data available (manual upload)")
             
             # Footer
             doc.add_paragraph()

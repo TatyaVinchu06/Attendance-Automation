@@ -20,18 +20,21 @@ logger = logging.getLogger(__name__)
 class EmailAutomation:
     """Email automation for attendance reports"""
     
-    def __init__(self):
+    def __init__(self, settings_manager=None):
         self.smtp_server = SMTP_SERVER
         self.smtp_port = SMTP_PORT
-        self.sender_email = SENDER_EMAIL
-        self.sender_password = SENDER_PASSWORD
+        self.settings_manager = settings_manager
+        
+        # Load from settings if available, otherwise use config defaults
+        if settings_manager:
+            self.sender_email = settings_manager.get("sender_email") or SENDER_EMAIL
+            self.sender_password = settings_manager.get("sender_password") or SENDER_PASSWORD
+        else:
+            self.sender_email = SENDER_EMAIL
+            self.sender_password = SENDER_PASSWORD
     
     def test_email_connection(self):
         """Test email configuration"""
-        if not self.is_configured():
-            logger.error("Email not configured properly")
-            return False
-        
         try:
             # Connect to server
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
@@ -39,18 +42,25 @@ class EmailAutomation:
             server.login(self.sender_email, self.sender_password)
             server.quit()
             
-            logger.info("Email configuration test successful")
+            logger.info("Email connection test successful")
             return True
             
         except Exception as e:
-            logger.error(f"Email configuration test failed: {e}")
+            logger.error(f"Email connection test failed: {e}")
             return False
     
     def update_credentials(self, email, password):
-        """Update sender credentials at runtime"""
+        """Update sender credentials at runtime and save to settings"""
         self.sender_email = email
         self.sender_password = password
-        logger.info("Email credentials updated at runtime")
+        
+        # Save to settings for persistence
+        if self.settings_manager:
+            self.settings_manager.set("sender_email", email)
+            self.settings_manager.set("sender_password", password)
+            logger.info("Email credentials updated and saved")
+        else:
+            logger.info("Email credentials updated at runtime only (no settings manager)")
 
     def is_configured(self):
         """Check if email is configured"""
