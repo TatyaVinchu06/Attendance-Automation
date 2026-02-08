@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Configuration file for AI-Based Attendance & Emotion Analytics System
+Configuration file
+Yaha saari settings change kar sakte hai
 """
 
 import os
 from pathlib import Path
 
 # ====================================================================
-# DIRECTORY STRUCTURE
+# FOLDER STRUCTURE
 # ====================================================================
 
 # Base directory (project root)
-# Base directory (project root)
-# config.py is in src/, so project root is parent directory
+# config.py src/ me hai, toh parent uske bahar hai
 BASE_DIR = Path(__file__).parent.parent.absolute()
 
 # Data directories
@@ -31,61 +31,65 @@ for directory in [DATA_DIR, IMAGES_DIR, STUDENT_DATASET_DIR, REPORTS_DIR, LOGS_D
 ENCODINGS_FILE = ENCODINGS_DIR / "face_encodings.pkl"
 
 # ====================================================================
-# CAMERA SETTINGS
+# CAMERA KI SETTING
 # ====================================================================
 
-CAMERA_INDEX = 0  # Default webcam (0 = primary camera)
+CAMERA_INDEX = 0  # 0 matlab laptop ka webcam
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 CAMERA_FPS = 30
 
 # Image capture settings
 IMAGE_FORMAT = "jpg"
-IMAGE_QUALITY = 95  # JPEG quality (0-100)
+IMAGE_QUALITY = 95  # Quality mast honi chahiye
 
 # ====================================================================
-# FACE RECOGNITION SETTINGS
+# FACE RECOGNITION KI SETTING
 # ====================================================================
 
-# Face detection model: 'hog' (faster, CPU) or 'cnn' (accurate, GPU)
+# Face detection model: 'hog' (fast hai) ya 'cnn' (bhaari hai)
 FACE_DETECTION_MODEL = 'hog'
 
-# Face recognition tolerance (lower = more strict, default: 0.6)
+# Face recognition tolerance (jitna kam, utna strict, default: 0.6)
 FACE_RECOGNITION_TOLERANCE = 0.6
 
-# Number of times to re-sample when encoding faces
+# Similarity threshold for DeepFace
+# Kam matlab strict checking
+SIMILARITY_THRESHOLD = 0.45
+
+# Face encoding jitters
 FACE_ENCODING_JITTERS = 1
 
-# Minimum face size to detect (in pixels)
+# Minimum face size (pixels me)
 MIN_FACE_SIZE = 50
 
 # ====================================================================
-# EMOTION DETECTION SETTINGS
+# EMOTION DETECTION KA JUGAD
 # ====================================================================
 
-# Emotion detection backend: 'opencv', 'ssd', 'dlib', 'mtcnn', 'retinaface'
+# Emotion backend
 EMOTION_BACKEND = 'opencv'
 
-# Emotion model: 'VGGFace', 'Facenet', 'OpenFace', 'DeepFace', 'DeepID', 'ArcFace', 'Dlib'
+# Emotion model
 EMOTION_MODEL = 'VGG-Face'
 
-# Emotions to detect
+# Emotions jo detect karne hai
 EMOTIONS = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
-# Confidence threshold for emotion detection (0-100)
+# Confidence threshold (0-100)
 EMOTION_CONFIDENCE_THRESHOLD = 60
 
 # ====================================================================
 # REPORT GENERATION SETTINGS
 # ====================================================================
 
-# Report format: 'txt', 'docx', or 'both'
+# Report format: 'txt', 'docx', ya 'both'
 REPORT_FORMAT = 'both'
 
-# Report naming convention: timestamp format
+# Report naming convention
 REPORT_TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"
 
-# Include emotion charts in reports
+# Charts chahiye report me?
 INCLUDE_EMOTION_CHARTS = True
 
 # ====================================================================
@@ -93,16 +97,16 @@ INCLUDE_EMOTION_CHARTS = True
 # ====================================================================
 
 # Email configuration
-EMAIL_ENABLED = True  # Set to False to disable email sending
+EMAIL_ENABLED = True  # False kardo agar email nahi bhejna
 
-# SMTP settings (Gmail example)
+# SMTP settings (Gmail ke liye)
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USE_TLS = True
 
-# Sender credentials (IMPORTANT: Update these with your actual credentials)
+# Sender credentials (IMP: Apna email daalna yaha)
 SENDER_EMAIL = "your.email@gmail.com"  # Change this
-SENDER_PASSWORD = "your_app_password"  # Change this (use App Password for Gmail)
+SENDER_PASSWORD = "your_app_password"  # Change this (App Password use karna)
 
 # Email subject template
 EMAIL_SUBJECT_TEMPLATE = "Attendance Report - {subject} - {date}"
@@ -125,18 +129,17 @@ Session Details:
 Class Emotion Summary:
 {emotion_summary}
 
-This is an automated email from the Attendance System.
+This is a smart system generated email.
 
 Best regards,
-Attendance System
+Om Bhamare System
 """
 
 # ====================================================================
 # TIMETABLE CONFIGURATION
 # ====================================================================
 
-# Subject to faculty email mapping
-# Subject to faculty email mapping
+# Subject aur teacher ka email mapping
 TIMETABLE = {
     "DBMS": "",
     "MP": "",
@@ -148,14 +151,14 @@ TIMETABLE = {
     "DBMSL": ""
 }
 
-# Default fallback email (if subject not in timetable)
+# Default email agar subject nahi mila
 DEFAULT_FACULTY_EMAIL = "ombhamer06@gmail.com"
 
 # ====================================================================
 # DATA CLEANUP SETTINGS
 # ====================================================================
 
-# Data retention period (days)
+# Kitne din ka data rakhna hai
 DATA_RETENTION_DAYS = 7
 
 # Directories to cleanup
@@ -168,7 +171,7 @@ CLEANUP_FILE_EXTENSIONS = ['.jpg', '.png', '.log', '.txt', '.docx']
 # SYSTEM SETTINGS
 # ====================================================================
 
-# Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Logging level
 LOG_LEVEL = "INFO"
 
 # Maximum concurrent processes
@@ -190,26 +193,25 @@ WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
 WINDOW_RESIZABLE = True
 
-# Theme colors
-# Theme colors (Modern Dark / Glassmorphism)
+# Theme colors (Dark Mode FTW)
 THEME_COLORS = {
-    'background': '#0f172a',    # Slate-900 (Main App Background)
-    'surface': '#1e293b',       # Slate-800 (Cards/Sidebar)
-    'primary': '#6366f1',       # Indigo-500 (Primary Actions)
+    'background': '#0f172a',    # Slate-900 
+    'surface': '#1e293b',       # Slate-800
+    'primary': '#6366f1',       # Indigo-500
     'primary_dark': '#4338ca',  # Indigo-700
-    'secondary': '#a855f7',     # Purple-500 (Accents)
-    'accent': '#06b6d4',        # Cyan-500 (Highlights)
+    'secondary': '#a855f7',     # Purple-500
+    'accent': '#06b6d4',        # Cyan-500
     'success': '#10b981',       # Emerald-500
     'danger': '#ef4444',        # Red-500
     'warning': '#f59e0b',       # Amber-500
     'info': '#3b82f6',          # Blue-500
-    'text': '#f8fafc',          # Slate-50 (Primary Text)
-    'text_dim': '#94a3b8',      # Slate-400 (Secondary Text)
+    'text': '#f8fafc',          # Slate-50
+    'text_dim': '#94a3b8',      # Slate-400
     'border': '#334155'         # Slate-700
 }
 
 # Font settings
-FONT_FAMILY = "Segoe UI"  # Clean, modern system font
+FONT_FAMILY = "Segoe UI"  # Clean font
 FONT_SIZE_SMALL = 11
 FONT_SIZE_NORMAL = 13
 FONT_SIZE_LARGE = 16
@@ -221,12 +223,12 @@ FONT_SIZE_HERO = 36
 # ADVANCED SETTINGS
 # ====================================================================
 
-# Performance optimization
-USE_GPU = False  # Set to True if GPU is available
+# Performance stuff
+USE_GPU = False  # GPU hai toh True karo
 PARALLEL_PROCESSING = True
 
 # Debug mode
-DEBUG_MODE = False  # Set to True for verbose logging
+DEBUG_MODE = False  # Sab kuch print hoga agar True kiya
 
 # Feature flags
 ENABLE_LIVE_PREVIEW = True
@@ -239,15 +241,15 @@ ENABLE_NOTIFICATIONS = True
 # ====================================================================
 
 def get_faculty_email(subject):
-    """Get faculty email for a subject"""
+    """Teacher ka email nikalte hai"""
     return TIMETABLE.get(subject, DEFAULT_FACULTY_EMAIL)
 
 def get_all_subjects():
-    """Get list of all configured subjects"""
+    """Saare subjects ki list"""
     return list(TIMETABLE.keys())
 
 def is_email_configured():
-    """Check if email is properly configured"""
+    """Check karte hai email set hai ya nahi"""
     return (EMAIL_ENABLED and 
             SENDER_EMAIL != "your.email@gmail.com" and 
             SENDER_PASSWORD != "your_app_password")
@@ -256,16 +258,16 @@ def is_email_configured():
 # CONSTANTS
 # ====================================================================
 
-APP_NAME = "AI Attendance System"
+APP_NAME = "Smart Attendance System"
 APP_VERSION = "1.0.0"
-APP_AUTHOR = "Your Name"
+APP_AUTHOR = "Om Bhamare"
 APP_DESCRIPTION = "Automated Attendance & Classroom Emotion Analytics System"
 
 # Status messages
 STATUS_READY = "Ready"
-STATUS_PROCESSING = "Processing..."
-STATUS_COMPLETE = "Complete"
-STATUS_ERROR = "Error"
+STATUS_PROCESSING = "Kaam chalu hai..."
+STATUS_COMPLETE = "Ho gaya"
+STATUS_ERROR = "Lagg gaye (Error)"
 
 # ====================================================================
 # EXPORT ALL

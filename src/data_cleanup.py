@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Data Cleanup Module
-Handles automatic cleanup of old files (7-day retention policy)
+Purana data udate hai (7 din ki retention policy hai)
 """
 
 import os
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class DataCleanup:
-    """Data cleanup and retention management"""
+    """Faltu data saaf karne wali class"""
     
     def __init__(self, retention_days=DATA_RETENTION_DAYS):
         self.retention_days = retention_days
@@ -21,13 +21,7 @@ class DataCleanup:
     
     def get_directory_stats(self, directory):
         """
-        Get statistics for a directory
-        
-        Args:
-            directory: Path to directory
-            
-        Returns:
-            dict: Directory statistics
+        Directory ka hisaab-kitaab nikalte hai
         """
         stats = {
             'total_files': 0,
@@ -39,6 +33,7 @@ class DataCleanup:
         }
         
         try:
+            # Retention period se pehle ki date nikalte hai
             cutoff_date = datetime.now() - timedelta(days=self.retention_days)
             
             for filename in os.listdir(directory):
@@ -51,26 +46,24 @@ class DataCleanup:
                     stats['total_files'] += 1
                     stats['total_size_bytes'] += file_size
                     
+                    # Agar purana hai
                     if file_modified < cutoff_date:
                         stats['old_files'] += 1
                         stats['old_files_size_bytes'] += file_size
             
-            # Convert to MB
+            # MB me convert karte hai
             stats['total_size_mb'] = round(stats['total_size_bytes'] / (1024 * 1024), 2)
             stats['old_files_size_mb'] = round(stats['old_files_size_bytes'] / (1024 * 1024), 2)
             
             return stats
             
         except Exception as e:
-            logger.error(f"Error getting directory stats: {e}")
+            logger.error(f"Stats lene me error: {e}")
             return stats
     
     def preview_cleanup(self):
         """
-        Preview what files will be deleted
-        
-        Returns:
-            dict: Cleanup preview information
+        Dekhte hai kya kya udne wala hai
         """
         preview = {
             'total_files_to_delete': 0,
@@ -93,13 +86,7 @@ class DataCleanup:
     
     def cleanup_directory(self, directory):
         """
-        Cleanup old files in a directory
-        
-        Args:
-            directory: Path to directory
-            
-        Returns:
-            dict: Cleanup results
+        Directory saaf karte hai
         """
         result = {
             'files_deleted': 0,
@@ -118,7 +105,7 @@ class DataCleanup:
                     try:
                         file_modified = datetime.fromtimestamp(os.path.getmtime(filepath))
                         
-                        # Check if file is older than retention period
+                        # Agar retention period se purana hai
                         if file_modified < cutoff_date:
                             file_size = os.path.getsize(filepath)
                             os.remove(filepath)
@@ -126,10 +113,10 @@ class DataCleanup:
                             result['files_deleted'] += 1
                             result['size_freed_bytes'] += file_size
                             
-                            logger.info(f"Deleted: {filename}")
+                            logger.info(f"Uda diya: {filename}")
                     
                     except Exception as e:
-                        error_msg = f"Error deleting {filename}: {e}"
+                        error_msg = f"{filename} delete nahi hua: {e}"
                         result['errors'].append(error_msg)
                         logger.error(error_msg)
             
@@ -138,16 +125,13 @@ class DataCleanup:
             return result
             
         except Exception as e:
-            logger.error(f"Error cleaning directory {directory}: {e}")
+            logger.error(f"{directory} saaf karne me error: {e}")
             result['errors'].append(str(e))
             return result
     
     def cleanup_all(self):
         """
-        Cleanup all configured directories
-        
-        Returns:
-            dict: Overall cleanup summary
+        Sab kuch saaf karte hai (jo config me hai)
         """
         summary = {
             'total_files_deleted': 0,
@@ -158,10 +142,10 @@ class DataCleanup:
         
         for directory in self.cleanup_dirs:
             if not os.path.exists(directory):
-                logger.warning(f"Directory does not exist: {directory}")
+                logger.warning(f"Directory nahi mili: {directory}")
                 continue
             
-            logger.info(f"Cleaning directory: {directory}")
+            logger.info(f"Safai chalu: {directory}")
             result = self.cleanup_directory(directory)
             
             dir_name = os.path.basename(directory)
@@ -172,23 +156,23 @@ class DataCleanup:
         
         summary['total_size_freed_mb'] = round(summary['total_size_freed_mb'], 2)
         
-        logger.info(f"Cleanup complete: {summary['total_files_deleted']} files deleted, " +
-                   f"{summary['total_size_freed_mb']} MB freed")
+        logger.info(f"Safai abhiyan khatam: {summary['total_files_deleted']} files gayi, " +
+                   f"{summary['total_size_freed_mb']} MB khali hua")
         
         return summary
     
     def schedule_cleanup(self):
-        """Setup scheduled cleanup (runs daily)"""
+        """Roz raat ko safai schedule karte hai"""
         import schedule
         
         def cleanup_job():
-            logger.info("Running scheduled cleanup")
+            logger.info("Scheduled safai shuru...")
             summary = self.cleanup_all()
-            logger.info(f"Scheduled cleanup: {summary['total_files_deleted']} files deleted")
+            logger.info(f"Scheduled safai: {summary['total_files_deleted']} files udi")
         
-        # Schedule cleanup at 2 AM daily
+        # Subah 2 baje
         schedule.every().day.at("02:00").do(cleanup_job)
         
-        logger.info("Cleanup scheduled for 2:00 AM daily")
+        logger.info("Raat ko 2 baje safai hogi")
         
         return schedule

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Report Generation Module
-Generates attendance and emotion reports in TXT/DOCX format
+Attendance aur emotion ki report banata hai (TXT/DOCX)
 """
 
 import os
@@ -16,18 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class ReportGenerator:
-    """Generate attendance reports"""
+    """Attendance report banane wali class"""
     
     def __init__(self):
         pass
     
     def _format_student_name(self, student_id):
-        """Format student ID like '1_Rakesh_bare' to 'Roll No: 1, Name: Rakesh bare'"""
+        """Student ID ko dhang se format karte hai"""
         try:
             parts = student_id.split('_')
             if len(parts) >= 2:
                 roll_no = parts[0]
-                name = ' '.join(parts[1:])  # Join all parts after roll number
+                name = ' '.join(parts[1:]) 
                 return f"Roll No: {roll_no}, Name: {name}"
             else:
                 return student_id
@@ -36,28 +36,16 @@ class ReportGenerator:
     
     def generate_report(self, attendance, emotion_summary, subject, time_start, time_end, report_format='both', image_path=None):
         """
-        Generate attendance report
-        
-        Args:
-            attendance: Dict of student attendance {name: status}
-            emotion_summary: Dict of emotion percentages
-            subject: Subject name
-            time_start: Start time string
-            time_end: End time string
-            report_format: 'txt', 'docx', or 'both'
-            image_path: Optional path to captured class image to embed
-            
-        Returns:
-            list: Paths to generated report files
+        Report generate karne ka function
         """
         report_files = []
         
         try:
-            # Generate filename
+            # Filename banate hai timestamp ke saath
             timestamp = datetime.now().strftime(REPORT_TIMESTAMP_FORMAT)
             base_filename = f"{subject}_{timestamp}"
             
-            # Generate TXT report
+            # TXT report chahiye kya?
             if report_format in ['txt', 'both']:
                 txt_file = self._generate_txt_report(
                     attendance, emotion_summary, subject,
@@ -66,7 +54,7 @@ class ReportGenerator:
                 if txt_file:
                     report_files.append(txt_file)
             
-            # Generate DOCX report
+            # DOCX report chahiye kya?
             if report_format in ['docx', 'both']:
                 docx_file = self._generate_docx_report(
                     attendance, emotion_summary, subject,
@@ -75,26 +63,26 @@ class ReportGenerator:
                 if docx_file:
                     report_files.append(docx_file)
             
-            logger.info(f"Generated {len(report_files)} report(s)")
+            logger.info(f"{len(report_files)} reports ban gayi")
             return report_files
             
         except Exception as e:
-            logger.error(f"Error generating reports: {e}")
+            logger.error(f"Report banane me error aaya: {e}")
             return []
     
     def _generate_txt_report(self, attendance, emotion_summary, subject, time_start, time_end, base_filename):
-        """Generate TXT format report"""
+        """TXT format report"""
         try:
             filepath = os.path.join(REPORTS_DIR, f"{base_filename}.txt")
             
-            # Prepare data
+            # Data prepare karte hai
             date_str = datetime.now().strftime("%Y-%m-%d")
             present = [name for name, status in attendance.items() if status == "Present"]
             absent = [name for name, status in attendance.items() if status == "Absent"]
             total = len(attendance)
             attendance_rate = (len(present) / total * 100) if total > 0 else 0
             
-            # Write report
+            # Likhte hai file me
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write("=" * 70 + "\n")
                 f.write(f"ATTENDANCE REPORT\n")
@@ -122,7 +110,7 @@ class ReportGenerator:
                         formatted_name = self._format_student_name(name)
                         f.write(f"{i}. {formatted_name}\n")
                 else:
-                    f.write("No students present\n")
+                    f.write("Koi nahi aaya (No students present)\n")
                 
                 f.write("\n")
                 f.write("-" * 70 + "\n")
@@ -134,9 +122,9 @@ class ReportGenerator:
                         formatted_name = self._format_student_name(name)
                         f.write(f"{i}. {formatted_name}\n")
                 else:
-                    f.write("No students absent\n")
+                    f.write("Sab present hai (No students absent)\n")
                 
-                # Always show emotion summary section
+                # Emotion summary
                 f.write("\n")
                 f.write("-" * 70 + "\n")
                 f.write("CLASS EMOTION SUMMARY\n")
@@ -147,30 +135,30 @@ class ReportGenerator:
                         bar = "█" * int(percentage / 5)
                         f.write(f"{emotion:12} {percentage:5.1f}%  {bar}\n")
                 else:
-                    f.write("No emotion data available (manual upload)\n")
+                    f.write("Data nahi hai (manual upload)\n")
                 
                 f.write("\n")
                 f.write("=" * 70 + "\n")
                 f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write("Attendance & Emotion Analytics System\n")
+                f.write("Smart System by Om Bhamare\n")
                 f.write("=" * 70 + "\n")
             
-            logger.info(f"TXT report generated: {filepath}")
+            logger.info(f"TXT report ban gayi: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Error generating TXT report: {e}")
+            logger.error(f"TXT report error: {e}")
             return None
     
     def _generate_docx_report(self, attendance, emotion_summary, subject, time_start, time_end, base_filename, image_path=None):
-        """Generate DOCX format report"""
+        """DOCX format report"""
         try:
             filepath = os.path.join(REPORTS_DIR, f"{base_filename}.docx")
             
-            # Create document
+            # Document create karte hai
             doc = Document()
             
-            # Set default font
+            # Font set karte hai
             style = doc.styles['Normal']
             font = style.font
             font.name = 'Calibri'
@@ -190,13 +178,13 @@ class ReportGenerator:
             metadata.add_run(f"Time: ").bold = True
             metadata.add_run(f"{time_start} – {time_end}")
             
-            # Class Photo
+            # Class Photo agar hai toh
             if image_path and os.path.exists(image_path):
                 doc.add_heading('Class Capture', 1)
                 try:
                     doc.add_picture(image_path, width=Inches(6.0))
                 except Exception as e:
-                    logger.warning(f"Could not add picture to report: {e}")
+                    logger.warning(f"Photo add nahi kar paye: {e}")
             
             # Summary
             doc.add_heading('Attendance Summary', 1)
@@ -237,7 +225,7 @@ class ReportGenerator:
             else:
                 doc.add_paragraph("No students absent")
             
-            # Emotion summary - always show section
+            # Emotion summary
             doc.add_heading('Class Emotion Summary', 1)
             if emotion_summary and len(emotion_summary) > 0:
                 for emotion, percentage in emotion_summary.items():
@@ -245,20 +233,20 @@ class ReportGenerator:
                     p.add_run(f"{emotion}: ").bold = True
                     p.add_run(f"{percentage:.1f}%")
             else:
-                doc.add_paragraph("No emotion data available (manual upload)")
+                doc.add_paragraph("Data nahi hai (manual upload)")
             
             # Footer
             doc.add_paragraph()
             footer = doc.add_paragraph()
             footer.add_run(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n").italic = True
-            footer.add_run("Attendance & Emotion Analytics System").italic = True
+            footer.add_run("Smart System by Om Bhamare").italic = True
             footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
             # Save document
             doc.save(filepath)
-            logger.info(f"DOCX report generated: {filepath}")
+            logger.info(f"DOCX report ban gayi: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Error generating DOCX report: {e}")
+            logger.error(f"DOCX report error: {e}")
             return None

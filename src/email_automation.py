@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Email Automation Module
-Handles automated email sending with timetable integration
+Attendance ki report email karte hai
 """
 
 import smtplib
@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 
 
 class EmailAutomation:
-    """Email automation for attendance reports"""
+    """Email bhejne ke liye class"""
     
     def __init__(self, settings_manager=None):
         self.smtp_server = SMTP_SERVER
         self.smtp_port = SMTP_PORT
         self.settings_manager = settings_manager
         
-        # Load from settings if available, otherwise use config defaults
+        # Settings se load karte hai agar hai toh
         if settings_manager:
             self.sender_email = settings_manager.get("sender_email") or SENDER_EMAIL
             self.sender_password = settings_manager.get("sender_password") or SENDER_PASSWORD
@@ -34,69 +34,61 @@ class EmailAutomation:
             self.sender_password = SENDER_PASSWORD
     
     def test_email_connection(self):
-        """Test email configuration"""
+        """Check karte hai email connect ho raha hai kya"""
         try:
-            # Connect to server
+            # Server se connect karte hai
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()
             server.login(self.sender_email, self.sender_password)
             server.quit()
             
-            logger.info("Email connection test successful")
+            logger.info("Email connection mast chal raha hai")
             return True
             
         except Exception as e:
-            logger.error(f"Email connection test failed: {e}")
+            logger.error(f"Email connect nahi hua: {e}")
             return False
     
     def update_credentials(self, email, password):
-        """Update sender credentials at runtime and save to settings"""
+        """Runtime pe email/password change karte hai"""
         self.sender_email = email
         self.sender_password = password
         
-        # Save to settings for persistence
+        # Save bhi kar lete hai future ke liye
         if self.settings_manager:
             self.settings_manager.set("sender_email", email)
             self.settings_manager.set("sender_password", password)
-            logger.info("Email credentials updated and saved")
+            logger.info("Email credentials update ho gaye")
         else:
-            logger.info("Email credentials updated at runtime only (no settings manager)")
+            logger.info("Bas abhi ke liye change kiya hai")
 
     def is_configured(self):
-        """Check if email is configured"""
+        """Email set hai ya nahi?"""
         return (self.sender_email != "your.email@gmail.com" and 
                 self.sender_password != "your_app_password")
 
     def send_attendance_report(self, subject, report_files, recipient_email=None):
         """
-        Send attendance report via email
-        
-        Args:
-            subject: Subject name (e.g., "DBMS")
-            report_files: List of report file paths to attach
-            recipient_email: Optional recipient email (overrides timetable)
-            
-        Returns:
-            bool: True if successful, False otherwise
+        Attendance ki report email karte hai
         """
         if not EMAIL_ENABLED:
-            logger.info("Email sending is disabled")
+            logger.info("Email band hai abhi")
             return False
         
         if not self.is_configured():
-            logger.error("Email not configured")
+            logger.error("Email configure nahi kiya hai")
             return False
         
         try:
-            # Get recipient email
+            # Kisko bhejna hai?
             if recipient_email is None:
-                # Try to get from arguments first, then config (fallback)
+                # Timetable se nikalte hai
                 recipient_email = get_faculty_email(subject)
             
-            # Prepare email content
+            # Content ready karte hai
             date_str = datetime.now().strftime("%Y-%m-%d")
             
-            # Create message
+            # Message banate hai
             msg = MIMEMultipart()
             msg['From'] = self.sender_email
             msg['To'] = recipient_email
@@ -105,23 +97,27 @@ class EmailAutomation:
                 date=date_str
             )
             
-            # Email body (will be populated from report data)
+            # Body (Thoda formal hi rakhte hai email me)
             body = f"""
 Dear Faculty,
 
 Please find attached the attendance report for {subject} on {date_str}.
 
-This is an automated email from the Attendance System.
+This is an automated email from the Smart System by Om Bhamare.
 
 Best regards,
-Attendance System
+Smart System
 """
             
             msg.attach(MIMEText(body, 'plain'))
             
-            # Attach report files
+            # Report attach karte hai
+            # Report attach karte hai (list ho ya string)
+            if isinstance(report_files, str):
+                report_files = [report_files]
+
             for report_file in report_files:
-                if os.path.exists(report_file):
+                if report_file and os.path.exists(report_file):
                     with open(report_file, 'rb') as f:
                         part = MIMEBase('application', 'octet-stream')
                         part.set_payload(f.read())
@@ -131,41 +127,31 @@ Attendance System
                             f'attachment; filename= {os.path.basename(report_file)}'
                         )
                         msg.attach(part)
-                        logger.debug(f"Attached: {os.path.basename(report_file)}")
+                        logger.debug(f"Attach kiya: {os.path.basename(report_file)}")
             
-            # Send email
+            # Bhejte hai
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()
             server.login(self.sender_email, self.sender_password)
             server.send_message(msg)
             server.quit()
             
-            logger.info(f"Email sent to {recipient_email}")
+            logger.info(f"Email bhej diya {recipient_email} ko")
             return True
             
         except Exception as e:
-            logger.error(f"Error sending email: {e}")
+            logger.error(f"Email bhejne me error: {e}")
             return False
     
     def send_custom_email(self, recipient_email, subject_line, body, attachments=None):
         """
-        Send custom email
-        
-        Args:
-            recipient_email: Recipient email address
-            subject_line: Email subject
-            body: Email body text
-            attachments: Optional list of file paths to attach
-            
-        Returns:
-            bool: True if successful, False otherwise
+        Custom email bhejne ke liye
         """
-        if not is_email_configured():
-            logger.error("Email not configured")
+        if not self.is_configured():
+            logger.error("Email configure nahi hai")
             return False
         
         try:
-            # Create message
             msg = MIMEMultipart()
             msg['From'] = self.sender_email
             msg['To'] = recipient_email
@@ -173,7 +159,7 @@ Attendance System
             
             msg.attach(MIMEText(body, 'plain'))
             
-            # Attach files
+            # Attachments
             if attachments:
                 for filepath in attachments:
                     if os.path.exists(filepath):
@@ -187,16 +173,16 @@ Attendance System
                             )
                             msg.attach(part)
             
-            # Send email
+            # Send
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
             server.starttls()
             server.login(self.sender_email, self.sender_password)
             server.send_message(msg)
             server.quit()
             
-            logger.info(f"Custom email sent to {recipient_email}")
+            logger.info(f"Custom email gaya {recipient_email} ko")
             return True
             
         except Exception as e:
-            logger.error(f"Error sending custom email: {e}")
+            logger.error(f"Custom email error: {e}")
             return False

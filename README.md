@@ -1,22 +1,23 @@
-# Automated Attendance & Classroom Emotion Analytics System
+# Smart Attendance & Classroom Analytics System
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)](https://www.microsoft.com/windows)
 
-A comprehensive AI-powered system for automating classroom attendance using face recognition and analyzing student emotions to provide insights into classroom engagement.
+**Made by Om Bhamare**
+
+A comprehensive smart system for automating classroom attendance using advanced face recognition and analyzing student emotions to provide insights into classroom engagement.
 
 ## 🌟 Features
 
-- **✅ Automated Attendance**: Face recognition-based attendance marking with configurable intervals
+- **✅ Automated Attendance**: Multi-layer face verification with 3-model consensus system
 - **😊 Emotion Analytics**: Classroom-level emotion detection and analysis
 - **📊 Report Generation**: Automatic generation of TXT and DOCX reports
 - **📧 Email Automation**: Timetable-based automatic email delivery to faculty
+- **📈 Monthly Summary**: Comprehensive student attendance reports across all subjects
 - **🔒 Privacy-First**: Auto-deletion of data after 7 days
-- **🖥️ Modern GUI**: Premium Dark Mode interface with interactive dashboard
+- **🖥️ Modern GUI**: Premium Dark Mode interface with interactive real-time dashboard
 - **📸 Live Camera Feed**: Real-time camera preview with manual "Upload Photo" analysis
 - **⚙️ Advanced Tools**: Student management (Delete/Retrain) and System Cleanup
-
 
 ## 🚀 Quick Start
 
@@ -36,36 +37,29 @@ A comprehensive AI-powered system for automating classroom attendance using face
    ```
 
 3. **Setup student database**:
-   ```bash
-   python create_demo_data.py
-   ```
-   
-   Then add student photos:
    - Go to `data/student_dataset/`
    - Create one folder per student
    - Add 3-5 clear face photos per student
 
 4. **Configure email** (optional):
-   - Open `config.py`
+   - Open `src/config.py`
    - Update `SENDER_EMAIL` and `SENDER_PASSWORD`
    - Update `TIMETABLE` with subject-to-faculty email mapping
 
 5. **Launch the application**:
    ```bash
-   # Double-click this file:
-   run_app.bat
+   python src/main.py
    ```
 
 ## 📖 User Guide
 
-### 1. Setup Student Database
+### 1. Enroll Students
 
-1. Launch the application
-2. Click **"Student Database"** in the sidebar
-3. Click **"Open Student Dataset Folder"**
-4. Add student photos (3-5 per student in separate folders)
-5. Click **"Train Face Recognition"**
-6. Wait for training to complete
+1. Click **"Enrollment"** in the sidebar
+2. Enter student Roll No and Name
+3. Capture 5 photos using the live camera
+4. Click **"Save Student"**
+5. System automatically trains the recognition model
 
 ### 2. Run Attendance Session
 
@@ -74,7 +68,7 @@ A comprehensive AI-powered system for automating classroom attendance using face
 3. Click **"Start Camera"** to preview
 4. Click **"Capture & Process"** to:
    - Capture classroom images
-   - Recognize student faces
+   - Recognize student faces using 3-layer verification
    - Detect emotions
    - Generate reports
    - Send email (if configured)
@@ -82,94 +76,68 @@ A comprehensive AI-powered system for automating classroom attendance using face
 ### 3. View Reports
 
 1. Click **"Reports"** in the sidebar
-2. Select a report from the list
-3. Click **"Open Report"** to view
+2. Browse generated reports
+3. Click **"Generate Monthly Summary"** for comprehensive attendance overview
 4. Reports are available in both TXT and DOCX formats
 
 ### 4. System Settings
 
 1. Click **"Settings"** in the sidebar
-2. Configure:
-   - Email credentials
-   - View system information
-   - Check configuration status
-
-### 5. Advanced Management & Cleanup
-
-1.  **Student Management**:
-    - Go to **Student Database**.
-    - Use the **Delete (🗑)** button to remove a student and auto-retrain.
-    - Use **"Re-Train Model"** if you manually add photos.
-
-2.  **Manual Upload**:
-    - Go to **Live Capture** -> **Upload Photo to Analyze**.
-    - Select a group photo to mark attendance without the camera.
-
-3.  **Data Cleanup**:
-    - Click **"Data Cleanup"** -> **"Run Cleanup"** to free up space.
+2. Configure email credentials
+3. View system information
+4. Check configuration status
 
 ## 🏗️ System Architecture
 
+The system uses a sophisticated multi-layer verification approach:
+
+### Face Recognition Pipeline
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    GUI Application                      │
-│                     (app_gui.py)                        │
-└────────────┬────────────────────────────────────────────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-┌───▼────┐      ┌────▼─────┐
-│ Camera │      │   Face   │
-│Capture │      │   Recog  │
-└───┬────┘      └────┬─────┘
-    │                │
-    │           ┌────▼─────┐
-    │           │ Emotion  │
-    │           │ Detection│
-    │           └────┬─────┘
-    │                │
-    └────────┬───────┘
-             │
-    ┌────────▼────────┐
-    │     Report      │
-    │   Generation    │
-    └────────┬────────┘
-             │
-    ┌────────▼────────┐
-    │      Email      │
-    │   Automation    │
-    └─────────────────┘
+📸 Camera Capture
+    ↓
+🔍 Image Preprocessing (Auto-resize for large images)
+    ↓
+🧠 3-Layer Verification:
+    - Layer 1: VGG-Face (Primary detection)
+    - Layer 2: Facenet (Secondary verification)
+    - Layer 3: ArcFace (Final validation)
+    ↓
+✓ Consensus Decision (2/3 models must agree)
+    ↓
+📊 Attendance Recorded
 ```
+
+### Key Innovations
+
+1. **Multi-Model Consensus**: Student must be confirmed by at least 2 out of 3 recognition models
+2. **Similarity Thresholding**: Strict distance-based matching prevents false positives
+3. **Duplicate Prevention**: Advanced tracking ensures no student is marked twice
+4. **RetinaFace Detection**: State-of-the-art face detector for group photos
 
 ## 📁 Project Structure
 
 ```
 cam/
-├── app_gui.py                 # Main GUI application
-├── config.py                  # Configuration settings
-├── main.py                    # Console-based interface
-├── image_capture.py           # Camera and image capture
-├── face_recognition_module.py # Face recognition engine
-├── emotion_detection.py       # Emotion detection engine
-├── report_generator.py        # Report generation (TXT/DOCX)
-├── email_automation.py        # Email automation with SMTP
-├── data_cleanup.py            # Auto-cleanup for privacy
-├── create_demo_data.py        # Demo data setup script
-├── requirements.txt           # Python dependencies
-├── run_app.bat                # Windows launch script
-├── README.md                  # This file
-├── PROJECT_DOCUMENTATION.md   # Detailed documentation
-└── data/                      # Data directory
-    ├── student_dataset/       # Student face photos
-    ├── images/                # Captured classroom images
-    ├── reports/               # Generated reports
-    ├── logs/                  # System logs
-    └── encodings/             # Face encodings (trained data)
+├── src/
+│   ├── main.py                    # Main GUI application
+│   ├── config.py                  # Configuration settings
+│   ├── image_capture.py           # Camera and image capture
+│   ├── face_recognition_module.py # 3-layer face verification engine
+│   ├── emotion_detection.py       # Emotion detection engine
+│   ├── report_generator.py        # Report generation (TXT/DOCX)
+│   ├── email_automation.py        # Email automation with SMTP
+│   └── data_cleanup.py            # Auto-cleanup for privacy
+├── data/                          # Data directory
+│   ├── student_dataset/           # Student face photos
+│   ├── images/                    # Captured classroom images
+│   ├── reports/                   # Generated reports
+│   └── logs/                      # System logs
+└── requirements.txt               # Python dependencies
 ```
 
 ## ⚙️ Configuration
 
-Key settings in `config.py`:
+Key settings in `src/config.py`:
 
 ```python
 # Data retention (privacy)
@@ -179,8 +147,7 @@ DATA_RETENTION_DAYS = 7
 CAMERA_INDEX = 0  # 0 = default camera
 
 # Face recognition
-FACE_DETECTION_MODEL = 'hog'  # 'hog' (fast) or 'cnn' (accurate)
-FACE_RECOGNITION_TOLERANCE = 0.6  # Lower = stricter
+SIMILARITY_THRESHOLD = 0.45  # Lower = stricter (0.40-0.50 recommended)
 
 # Email settings
 SENDER_EMAIL = "your.email@gmail.com"
@@ -189,7 +156,7 @@ SENDER_PASSWORD = "your_app_password"
 # Timetable (subject → faculty email)
 TIMETABLE = {
     "DBMS": "dbms.faculty@example.com",
-    "OS": "os.faculty@example.com",
+    "DSA": "dsa.faculty@example.com",
     # Add more subjects...
 }
 ```
@@ -201,64 +168,59 @@ TIMETABLE = {
 - Try changing `CAMERA_INDEX` in config.py (0, 1, 2...)
 - Restart the application
 
-### Face recognition not accurate
-- Ensure good lighting when adding student photos
-- Add more photos per student (5+ recommended)
+### Face recognition accuracy issues
+- Ensure good lighting when enrolling students
+- Add 5+ photos per student from different angles
 - Use clear, frontal face photos
-- Adjust `FACE_RECOGNITION_TOLERANCE` in config.py
+- System uses 3-layer verification for maximum accuracy
 
 ### Email not sending
 - Use Gmail App Password (not regular password)
 - Enable "Less secure app access" or use App Passwords
 - Check SMTP settings in config.py
-- Test with "Test Email" button in dashboard
 
-### Dependencies installation fails
-- Install Visual C++ Build Tools (for dlib/cmake)
-- Use Python 3.8-3.10 (better compatibility)
-- Install packages one by one if batch install fails
+### False positives in attendance
+- System automatically prevents this with:
+  - 3-model consensus (2/3 must agree)
+  - Strict similarity thresholding
+  - Duplicate detection
 
 ## 📚 Technologies Used
 
-- **Face Recognition**: `face-recognition`, `dlib`, `OpenCV`
-- **Emotion Detection**: `DeepFace`, `TensorFlow`
-- **GUI**: `Tkinter`, `Pillow`
-- **Reports**: `python-docx`, `matplotlib`
-- **Email**: `smtplib` (built-in)
-- **Scheduling**: `schedule`
+- **Face Recognition**: DeepFace (VGG-Face, Facenet, ArcFace), RetinaFace, OpenCV
+- **Emotion Detection**: DeepFace, TensorFlow
+- **GUI**: CustomTkinter (Modern Dark UI)
+- **Reports**: python-docx
+- **Email**: smtplib (built-in)
 
 ## 🛡️ Privacy & Data Security
 
 - All data is stored locally (no cloud storage)
 - Automatic data deletion after 7 days
-- No personally identifiable information shared
+- No personally identifiable information shared externally
 - Only class-level emotion data (not individual emotions)
 - Email communication encrypted with TLS
 
-## 📝 License
+## 🎯 Accuracy Features
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Multi-Layer Verification
+- **Layer 1**: VGG-Face model
+- **Layer 2**: Facenet model  
+- **Layer 3**: ArcFace model
+- **Decision**: 2/3 models must agree to confirm presence
 
-## 👨‍💻 Author
+### Smart Detection
+- RetinaFace detector for better group photo handling
+- Automatic image preprocessing
+- Distance-based similarity thresholds
+- Prevents duplicate marking
 
-**Your Name**
-- Email: your.email@example.com
-- GitHub: [@yourusername](https://github.com/yourusername)
+## 📝 Author
 
-## 🙏 Acknowledgments
-
-- Face recognition powered by [face-recognition](https://github.com/ageitgey/face_recognition)
-- Emotion detection using [DeepFace](https://github.com/serengil/deepface)
-- Built for academic demonstration purposes
-
-## 📞 Support
-
-For issues, questions, or contributions:
-1. Check the troubleshooting section above
-2. Review `PROJECT_DOCUMENTATION.md`
-3. Create an issue on GitHub
-4. Contact the development team
+**Om Bhamare**
+- Smart Attendance & Classroom Analytics System
+- Advanced Computer Vision & Pattern Recognition
 
 ---
 
-**Made with ❤️ for automated attendance and classroom analytics**
+**Made by Om Bhamare - Smart System for Automated Attendance**

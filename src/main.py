@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Smart Attendance System - Modern GUI
-Built with CustomTkinter for a premium Windows 11-style look.
+Om Bhamare ka Smart System
+CustomTkinter use kiya hai mast look ke liye
 """
 
 import customtkinter as ctk
@@ -17,7 +18,7 @@ import shutil
 import random
 from datetime import datetime
 
-# Import backend modules
+# Backend modules import kar rahe hai
 from image_capture import ImageCapture
 from face_recognition_module import FaceRecognitionModule
 from emotion_detection import EmotionDetection
@@ -27,7 +28,7 @@ from data_cleanup import DataCleanup
 from settings_manager import SettingsManager
 from config import *
 
-# Configure Logging
+# Logging setup - sab record hoga yaha
 logging.basicConfig(level=logging.INFO, 
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                    handlers=[
@@ -36,7 +37,7 @@ logging.basicConfig(level=logging.INFO,
                    ])
 logger = logging.getLogger(__name__)
 
-# Set Theme
+# Theme set karte hai - Dark mode best hai
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
@@ -44,14 +45,16 @@ class AttendanceApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Window Setup
+        # Window Setup - Title aur size set karte hai
         self.title(WINDOW_TITLE)
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.minsize(1100, 750)
         
-        # Configure Grid
+        # Grid layout banate hai
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+        
+        # Saare modules load kar rahe hai
         self.image_capture = ImageCapture()
         self.face_recognition = FaceRecognitionModule()
         self.emotion_detection = EmotionDetection()
@@ -60,7 +63,7 @@ class AttendanceApp(ctk.CTk):
         self.email_automation = EmailAutomation(self.settings_manager)
         self.data_cleanup = DataCleanup()
         
-        # State
+        # Variables (State maintain karne ke liye)
         self.camera_active = False
         self.automation_active = False
         self.after_id = None
@@ -70,14 +73,14 @@ class AttendanceApp(ctk.CTk):
         self.last_analysis_time = datetime.now()
         self.last_attendance_time = datetime.now()
         
-        # Load Haar Cascade
+        # Haar Cascade load karte hai (chehra dhundne ke liye)
         try:
             self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         except:
-            logger.warning("No Haar Cascade found")
+            logger.warning("Haar Cascade nahi mila yaar")
             self.face_cascade = None
 
-        # Warmup Face Recognition in Background
+        # Face Recognition ko background me start karte hai taaki app hang na ho
         threading.Thread(target=self._warmup_model, daemon=True).start()
 
         # Layout Setup
@@ -87,15 +90,15 @@ class AttendanceApp(ctk.CTk):
         self.create_sidebar()
         self.create_main_area()
 
-        # Start on Live Capture
+        # Pehle Dashboard dikhayenge
         self.show_dashboard()
         self.after(1000, self.auto_start_camera)
 
     def create_sidebar(self):
-        """Create the modern sidebar navigation"""
+        """Side wala menu banate hai"""
         self.sidebar_frame = ctk.CTkFrame(self, width=260, corner_radius=0, fg_color=THEME_COLORS['surface'])
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(8, weight=1) # Spacer at bottom
+        self.sidebar_frame.grid_rowconfigure(8, weight=1) # Neeche jagah chodne ke liye
 
         # --- Logo Area ---
         logo_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
@@ -108,7 +111,7 @@ class AttendanceApp(ctk.CTk):
         ctk.CTkLabel(title_frame, text="ATTENDANCE", 
                     font=ctk.CTkFont(family=FONT_FAMILY, size=18, weight="bold"),
                     text_color=THEME_COLORS['text']).pack(anchor="w")
-        ctk.CTkLabel(title_frame, text="PRO EDITION", 
+        ctk.CTkLabel(title_frame, text="Made by Om Bhamare", 
                     font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
                     text_color=THEME_COLORS['secondary']).pack(anchor="w")
 
@@ -187,7 +190,7 @@ class AttendanceApp(ctk.CTk):
         content.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
 
         # --- Hero Section ---
-        hero_frame = ctk.CTkFrame(content, fg_color=THEME_COLORS['primary_dark'], corner_radius=15)
+        hero_frame = ctk.CTkFrame(content, fg_color=THEME_COLORS['accent'], corner_radius=15)
         hero_frame.pack(fill="x", pady=(0, 30))
         
         # Gradient-like effect overlay (simulated with nested frames or just solid color for now)
@@ -235,7 +238,7 @@ class AttendanceApp(ctk.CTk):
         chart_section.pack(fill="x", pady=(0, 20))
         chart_section.columnconfigure((0, 1), weight=1)
         
-        # 1. Weekly Attendance (Mock Bar Chart)
+        # 1. Weekly Attendance (Real Data from Reports)
         trend_card = ctk.CTkFrame(chart_section, fg_color=THEME_COLORS['surface'], corner_radius=15)
         trend_card.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         
@@ -244,9 +247,9 @@ class AttendanceApp(ctk.CTk):
         bars_frame = ctk.CTkFrame(trend_card, fg_color="transparent")
         bars_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         
+        # Get real attendance data from reports
         days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-        # Mock Dynamic Data: Randomize slightly to show "activity"
-        values = [random.uniform(0.4, 0.9) for _ in range(5)]
+        values = self._get_weekly_attendance_data()
         
         for i, (day, val) in enumerate(zip(days, values)):
             col = ctk.CTkFrame(bars_frame, fg_color="transparent")
@@ -254,24 +257,47 @@ class AttendanceApp(ctk.CTk):
             
             # Bar (Progress Bar vertical simulation)
             bar_height = 150
-            h = int(bar_height * val)
+            h = int(bar_height * val) if val > 0 else 5  # Minimum height for visibility
             
             bar = ctk.CTkFrame(col, width=20, height=h, fg_color=THEME_COLORS['primary'], corner_radius=5)
             bar.pack(side="bottom", pady=(0, 5))
             
+            # Show percentage if available
+            if val > 0:
+                ctk.CTkLabel(col, text=f"{int(val*100)}%", font=ctk.CTkFont(size=9), text_color="gray").pack(side="bottom", pady=(0, 2))
             ctk.CTkLabel(col, text=day, font=ctk.CTkFont(size=10), text_color="gray").pack(side="bottom")
 
-        # 2. Class Occupancy (Progress Ring concept -> Linear for now)
+        # 2. Class Occupancy (Real Data)
         occ_card = ctk.CTkFrame(chart_section, fg_color=THEME_COLORS['surface'], corner_radius=15)
         occ_card.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         
         ctk.CTkLabel(occ_card, text="🏫 Class Occupancy", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20, pady=15)
         
-        ctk.CTkLabel(occ_card, text="Current Session", text_color="gray").pack(pady=(20, 5))
-        ctk.CTkLabel(occ_card, text="0 / 60", font=ctk.CTkFont(size=40, weight="bold"), text_color=THEME_COLORS['success']).pack()
+        # Calculate real occupancy
+        total_students = students_count
+        present_count = len(self.last_attendance)
+        occupancy_rate = (present_count / total_students) if total_students > 0 else 0
         
-        ctk.CTkProgressBar(occ_card, width=300, height=15, corner_radius=10, progress_color=THEME_COLORS['success']).pack(pady=20)
-        ctk.CTkLabel(occ_card, text="Low Occupancy", text_color="gray", font=ctk.CTkFont(size=12)).pack()
+        # Determine status and color
+        if occupancy_rate >= 0.7:
+            status_text = "High Occupancy"
+            status_color = THEME_COLORS['success']
+        elif occupancy_rate >= 0.4:
+            status_text = "Moderate Occupancy"
+            status_color = THEME_COLORS['warning']
+        else:
+            status_text = "Low Occupancy"
+            status_color = THEME_COLORS['info']
+        
+        ctk.CTkLabel(occ_card, text="Current Session", text_color="gray").pack(pady=(20, 5))
+        ctk.CTkLabel(occ_card, text=f"{present_count} / {total_students}", 
+                    font=ctk.CTkFont(size=40, weight="bold"), 
+                    text_color=status_color).pack()
+        
+        progress = ctk.CTkProgressBar(occ_card, width=300, height=15, corner_radius=10, progress_color=status_color)
+        progress.set(occupancy_rate)
+        progress.pack(pady=20)
+        ctk.CTkLabel(occ_card, text=status_text, text_color="gray", font=ctk.CTkFont(size=12)).pack()
 
         # --- Recent Activity ---
         activity_label = ctk.CTkLabel(content, text="Recent Activity", 
@@ -336,6 +362,43 @@ class AttendanceApp(ctk.CTk):
     def create_stat_card(self, parent, col, title, value, icon):
         # Legacy method kept for compatibility if needed, but redirects to modern
         pass
+
+    def _get_weekly_attendance_data(self):
+        """Get real attendance data from reports for the past 5 weekdays"""
+        try:
+            # Get all report files
+            report_files = [f for f in os.listdir(REPORTS_DIR) if f.endswith('.txt')]
+            
+            if not report_files:
+                return [0, 0, 0, 0, 0]  # No data available
+            
+            # Parse attendance rates from recent reports
+            attendance_rates = []
+            for report_file in sorted(report_files, reverse=True)[:5]:  # Last 5 reports
+                try:
+                    filepath = os.path.join(REPORTS_DIR, report_file)
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        # Look for "Attendance Rate: XX.X%"
+                        if "Attendance Rate:" in content:
+                            rate_line = [line for line in content.split('\n') if 'Attendance Rate:' in line][0]
+                            rate_str = rate_line.split(':')[1].strip().replace('%', '')
+                            rate = float(rate_str) / 100.0
+                            attendance_rates.append(rate)
+                except Exception as e:
+                    logger.debug(f"Error parsing report {report_file}: {e}")
+                    continue
+            
+            # Pad with zeros if we don't have 5 reports
+            while len(attendance_rates) < 5:
+                attendance_rates.append(0)
+            
+            # Return last 5 (or padded list)
+            return attendance_rates[:5][::-1]  # Reverse to show oldest to newest
+            
+        except Exception as e:
+            logger.error(f"Error getting weekly attendance data: {e}")
+            return [0, 0, 0, 0, 0]
 
     def show_live_capture(self):
         self.clear_content()
@@ -442,6 +505,12 @@ class AttendanceApp(ctk.CTk):
     def show_settings(self):
         self.clear_content()
         self.current_page = "settings"
+        
+        # Reset grid configuration to prevent layout issues from other tabs
+        self.main_frame.columnconfigure(0, weight=1)
+        self.main_frame.columnconfigure(1, weight=0)
+        self.main_frame.columnconfigure(2, weight=0)
+        self.main_frame.rowconfigure(0, weight=1)
         
         # Simple scrollable container
         container = ctk.CTkScrollableFrame(self.main_frame, fg_color="transparent")
@@ -584,6 +653,11 @@ class AttendanceApp(ctk.CTk):
         ctk.CTkLabel(toolbar, text="📅 Date Range:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=15, pady=10)
         ctk.CTkButton(toolbar, text="Last 7 Days", fg_color=THEME_COLORS['background'], width=100, height=30).pack(side="left", padx=5)
         ctk.CTkButton(toolbar, text="This Month", fg_color="transparent", border_width=1, width=100, height=30).pack(side="left", padx=5)
+        
+        # Monthly Summary Button
+        ctk.CTkButton(toolbar, text="📊 Generate Monthly Summary", command=self.generate_monthly_summary,
+                     fg_color=THEME_COLORS['primary'], hover_color=THEME_COLORS['primary_dark'], 
+                     width=200, height=35, font=ctk.CTkFont(weight="bold")).pack(side="right", padx=15)
 
         # Reports Grid/List
         reports_frame = ctk.CTkScrollableFrame(container, fg_color="transparent")
@@ -653,6 +727,239 @@ class AttendanceApp(ctk.CTk):
         except Exception as e:
             logger.error(f"Error deleting report: {e}")
             messagebox.showerror("Error", f"Failed to delete report:\n{str(e)}")
+
+    def _parse_attendance_from_report(self, filepath):
+        """Parse attendance data from a single report file"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract subject from filename
+            filename = os.path.basename(filepath)
+            subject = filename.split('_')[0]
+            
+            # Parse present students
+            present_students = []
+            absent_students = []
+            
+            # Find present students section
+            if "PRESENT STUDENTS" in content:
+                lines = content.split('\n')
+                in_present_section = False
+                in_absent_section = False
+                
+                for line in lines:
+                    if "PRESENT STUDENTS" in line:
+                        in_present_section = True
+                        in_absent_section = False
+                        continue
+                    elif "ABSENT STUDENTS" in line:
+                        in_present_section = False
+                        in_absent_section = True
+                        continue
+                    elif "CLASS EMOTION" in line or "======" in line:
+                        in_present_section = False
+                        in_absent_section = False
+                        continue
+                    
+                    # Parse student line (format: "1. Roll No: X, Name: Y")
+                    if in_present_section and line.strip() and line.strip()[0].isdigit():
+                        # Extract name part after "Name: "
+                        if "Name:" in line:
+                            name_part = line.split("Name:")[1].strip()
+                            present_students.append(name_part)
+                    
+                    if in_absent_section and line.strip() and line.strip()[0].isdigit():
+                        if "Name:" in line:
+                            name_part = line.split("Name:")[1].strip()
+                            absent_students.append(name_part)
+            
+            return {
+                'subject': subject,
+                'present': present_students,
+                'absent': absent_students
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing report {filepath}: {e}")
+            return None
+
+    def generate_monthly_summary(self):
+        """Generate monthly attendance summary report"""
+        try:
+            # Get all txt report files
+            report_files = [f for f in os.listdir(REPORTS_DIR) if f.endswith('.txt')]
+            
+            if not report_files:
+                messagebox.showwarning("No Data", "❌ No reports found!\n\nPlease generate some attendance reports first.")
+                return
+            
+            # Show progress
+            messagebox.showinfo("Processing", f"📊 Processing {len(report_files)} reports...\n\nPlease wait...")
+            
+            # Aggregate data: {student_name: {subject: {'present': count, 'total': count}}}
+            student_data = {}
+            all_subjects = set()
+            
+            # Parse all reports
+            for filename in report_files:
+                filepath = os.path.join(REPORTS_DIR, filename)
+                report_data = self._parse_attendance_from_report(filepath)
+                
+                if not report_data:
+                    continue
+                
+                subject = report_data['subject']
+                all_subjects.add(subject)
+                
+                # Process present students
+                for student in report_data['present']:
+                    if student not in student_data:
+                        student_data[student] = {}
+                    if subject not in student_data[student]:
+                        student_data[student][subject] = {'present': 0, 'total': 0}
+                    student_data[student][subject]['present'] += 1
+                    student_data[student][subject]['total'] += 1
+                
+                # Process absent students
+                for student in report_data['absent']:
+                    if student not in student_data:
+                        student_data[student] = {}
+                    if subject not in student_data[student]:
+                        student_data[student][subject] = {'present': 0, 'total': 0}
+                    student_data[student][subject]['total'] += 1
+            
+            if not student_data:
+                messagebox.showwarning("No Data", "❌ Could not extract student data from reports.\n\nPlease check report format.")
+                return
+            
+            # Generate DOCX report
+            from docx import Document
+            from docx.shared import Inches, Pt, RGBColor
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            
+            doc = Document()
+            
+            # Title
+            title = doc.add_heading('Monthly Attendance Summary Report', 0)
+            title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            # Metadata
+            metadata = doc.add_paragraph()
+            metadata.add_run(f"Generated: ").bold = True
+            metadata.add_run(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            metadata.add_run(f"Total Reports: ").bold = True
+            metadata.add_run(f"{len(report_files)}\n")
+            metadata.add_run(f"Subjects: ").bold = True
+            metadata.add_run(f"{', '.join(sorted(all_subjects))}\n")
+            metadata.add_run(f"Students: ").bold = True
+            metadata.add_run(f"{len(student_data)}")
+            
+            doc.add_paragraph()  # Spacing
+            
+            # Create table
+            subjects_list = sorted(all_subjects)
+            num_cols = 2 + len(subjects_list) + 1  # Student Name + Subjects + Overall %
+            num_rows = 1 + len(student_data)  # Header + Students
+            
+            table = doc.add_table(rows=num_rows, cols=num_cols)
+            table.style = 'Light Grid Accent 1'
+            
+            # Header row
+            header_cells = table.rows[0].cells
+            header_cells[0].text = 'Student Name'
+            for i, subject in enumerate(subjects_list):
+                header_cells[i + 1].text = subject
+            header_cells[-1].text = 'Overall %'
+            
+            # Make header bold
+            for cell in header_cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.bold = True
+            
+            # Data rows
+            for row_idx, (student_name, subjects_data) in enumerate(sorted(student_data.items()), 1):
+                row_cells = table.rows[row_idx].cells
+                row_cells[0].text = student_name
+                
+                total_present = 0
+                total_sessions = 0
+                
+                # Fill subject columns
+                for col_idx, subject in enumerate(subjects_list):
+                    cell = row_cells[col_idx + 1]
+                    if subject in subjects_data:
+                        present = subjects_data[subject]['present']
+                        total = subjects_data[subject]['total']
+                        percentage = (present / total * 100) if total > 0 else 0
+                        
+                        cell.text = f"{present}/{total}"
+                        
+                        # Color code based on percentage
+                        if percentage >= 75:
+                            # Green background
+                            shading = cell._element.get_or_add_tcPr()
+                            shading_elem = shading.find('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                            if shading_elem is None:
+                                from docx.oxml import OxmlElement
+                                shading_elem = OxmlElement('w:shd')
+                                shading.append(shading_elem)
+                            shading_elem.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'C6EFCE')
+                        elif percentage >= 50:
+                            # Yellow background
+                            shading = cell._element.get_or_add_tcPr()
+                            shading_elem = shading.find('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                            if shading_elem is None:
+                                from docx.oxml import OxmlElement
+                                shading_elem = OxmlElement('w:shd')
+                                shading.append(shading_elem)
+                            shading_elem.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'FFEB9C')
+                        else:
+                            # Red background
+                            shading = cell._element.get_or_add_tcPr()
+                            shading_elem = shading.find('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                            if shading_elem is None:
+                                from docx.oxml import OxmlElement
+                                shading_elem = OxmlElement('w:shd')
+                                shading.append(shading_elem)
+                            shading_elem.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill', 'FFC7CE')
+                        
+                        total_present += present
+                        total_sessions += total
+                    else:
+                        cell.text = "N/A"
+                
+                # Overall percentage
+                overall_pct = (total_present / total_sessions * 100) if total_sessions > 0 else 0
+                row_cells[-1].text = f"{overall_pct:.1f}%"
+            
+            # Legend
+            doc.add_paragraph()
+            legend = doc.add_paragraph()
+            legend.add_run("Legend: ").bold = True
+            legend.add_run("Green (≥75%), Yellow (50-74%), Red (<50%)")
+            
+            # Footer
+            footer = doc.add_paragraph()
+            footer.add_run(f"\nAttendance & Emotion Analytics System").italic = True
+            footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            # Save document
+            timestamp = datetime.now().strftime(REPORT_TIMESTAMP_FORMAT)
+            filename = f"Monthly_Summary_{timestamp}.docx"
+            filepath = os.path.join(REPORTS_DIR, filename)
+            doc.save(filepath)
+            
+            logger.info(f"Monthly summary generated: {filepath}")
+            messagebox.showinfo("Success", f"✅ Monthly Summary Generated!\n\nFile: {filename}\n\nStudents: {len(student_data)}\nSubjects: {len(subjects_list)}\nReports: {len(report_files)}")
+            
+            # Refresh reports view
+            self.show_reports()
+            
+        except Exception as e:
+            logger.error(f"Error generating monthly summary: {e}")
+            messagebox.showerror("Error", f"❌ Failed to generate summary:\n\n{str(e)}")
 
     def show_enrollment(self):
         """Modern split-view enrollment page"""
@@ -1146,14 +1453,15 @@ class AttendanceApp(ctk.CTk):
             try:
                 time_now = datetime.now().strftime("%H:%M:%S")
                 
-                # Generate report
+                # Generate report with the uploaded photo
                 report_paths = self.report_generator.generate_report(
                     attendance=attendance,
                     emotion_summary={},  # No emotion data from manual upload
                     subject=subject,
                     time_start=time_now,
                     time_end=time_now,
-                    report_format='both'
+                    report_format='both',
+                    image_path=file_path  # Include the uploaded photo in the report
                 )
                 
                 if report_paths:
@@ -1238,7 +1546,7 @@ class AttendanceApp(ctk.CTk):
              self.start_automated_session()
 
     def start_automated_session(self):
-        """Start camera + Automation Loop"""
+        """Camera aur automation chalu karte hai"""
         if self.camera_active:
             self.stop_camera()
             return
@@ -1249,14 +1557,14 @@ class AttendanceApp(ctk.CTk):
             self.start_btn.configure(text="⏹ STOP SESSION", fg_color=THEME_COLORS['danger'], hover_color="#b91c1c")
             self.capture_btn.configure(state="normal")
             
-            # Reset Timers
+            # Timer reset karte hai
             self.last_analysis_time = datetime.now()
             self.last_attendance_time = datetime.now()
             
             self.update_camera_feed()
-            logger.info("Automated Session Started")
+            logger.info("Session chalu ho gaya")
         else:
-            messagebox.showerror("Error", "Camera failed to start.")
+            messagebox.showerror("Error", "Camera nahi chala bhai.")
 
     def stop_camera(self):
         self.camera_active = False
@@ -1266,28 +1574,28 @@ class AttendanceApp(ctk.CTk):
             self.after_id = None
         self.image_capture.release_camera()
         
-        # Reset UI
+        # UI reset kar dete hai
         self.start_btn.configure(text="▶ START SESSION", fg_color=THEME_COLORS['success'], hover_color="#059669")
         self.capture_btn.configure(state="disabled")
-        self.camera_label.configure(image=None, text="Camera Offline\nClick Start to Begin")
+        self.camera_label.configure(image=None, text="Camera Band Hai\nStart pe click karo")
 
     def update_camera_feed(self):
         if not self.camera_active or self.showing_result: return
         
         frame = self.image_capture.get_frame()
         if frame is not None:
-            # 1. Face Detection (Visual Only)
+            # 1. Face Detection (Bas dikhane ke liye)
             if self.face_cascade:
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
                 for (x, y, w, h) in faces:
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
-            # 2. Automation Logic
+            # 2. Automation Logic (Apna main kaam)
             if self.automation_active:
                 self._check_automation(frame)
 
-            # 3. Smart Resize
+            # 3. Smart Resize (Screen pe fit hona chahiye)
             cw = self.cam_container.winfo_width()
             ch = self.cam_container.winfo_height()
             
@@ -1305,85 +1613,85 @@ class AttendanceApp(ctk.CTk):
         self.after_id = self.after(30, self.update_camera_feed)
 
     def _check_automation(self, frame):
-        """Check if it's time to analyze or mark attendance"""
+        """Check karte hai ki time ho gaya kya analysis ka"""
         now = datetime.now()
         
-        # Get Intervals (Minutes)
+        # Settings se time lete hai
         ana_int = self.settings_manager.get("analysis_interval")
         att_int = self.settings_manager.get("attendance_interval")
         
         # Check Analysis
         delta_ana = (now - self.last_analysis_time).total_seconds() / 60
         if delta_ana >= ana_int:
-            logger.info("Auto-Analyzing Faces...")
+            logger.info("Chehra analyze kar rahe hai...")
             self.last_analysis_time = now
             threading.Thread(target=self._update_live_feed, args=(frame.copy(),), daemon=True).start()
             
-        # Check Attendance Marking (Mock implementation for demo)
+        # Check Attendance Marking (Mock implementation hai abhi)
         delta_att = (now - self.last_attendance_time).total_seconds() / 60
         if delta_att >= att_int:
-             logger.info("Auto-Marking Attendance...")
+             logger.info("Attendance laga rahe hai...")
              self.last_attendance_time = now
-             # In a real app, this would commit the session data
-             self.after(0, lambda: messagebox.showinfo("Autolink", "✅ Scheduled Attendance Marked locally."))
+             # Asli app me yaha database save hoga
+             self.after(0, lambda: messagebox.showinfo("Autolink", "✅ Attendance lag gayi."))
 
     def _update_live_feed(self, frame):
-        """Background thread for live recognition"""
+        """Background me face dhoondhte hai taaki screen na atkegi"""
         try:
-            # Save temp for recognition
+            # Temp save karte hai
             temp_path = os.path.join(IMAGES_DIR, "live_temp.jpg")
             cv2.imwrite(temp_path, frame)
             
-            # Quick recognition
+            # Jaldi se pehchan lete hai
             attendance = self.face_recognition.recognize_faces(temp_path)
             
-            # Update UI if someone found
+            # Agar koi mila toh screen pe dikhayenge
             for name, status in attendance.items():
                 if status == "Present":
                     timestamp = datetime.now().strftime("%H:%M:%S")
-                    # Schedule UI update
+                    # UI update shcedule
                     self.after(0, self.update_recent_feed, name, timestamp)
         except Exception as e:
-            logger.error(f"Live feed error: {e}")
+            logger.error(f"Live feed me error: {e}")
 
     def capture_and_process(self):
         subject = self.subject_var.get()
         threading.Thread(target=self._process_attendance, args=(subject,), daemon=True).start()
 
     def _process_attendance(self, subject):
-        self.update_status("Capturing Images...", "orange")
+        self.update_status("Photo khinch rahe hai...", "orange")
         self.capture_btn.configure(state="disabled")
         
         try:
             images = self.image_capture.capture_multiple_images(count=3)
-            if not images: raise Exception("No images captured")
+            if not images: raise Exception("Photo nahi aayi yaar")
             
-            self.update_status("Analyzing Faces...", "blue")
+            self.update_status("Chehra dhoond rahe hai...", "blue")
             all_attendance = {}
             final_annotated_img = None
             
             for img_path in images:
-                # Get attendance AND annotated image
+                # Attendance aur photo dono chahiye
                 att, ann_img = self.face_recognition.recognize_faces(img_path, return_annotated=True)
                 all_attendance.update(att)
                 if ann_img is not None:
-                    final_annotated_img = ann_img # Use the last one
+                    final_annotated_img = ann_img # Aakhri wala use karenge
             
-            # Show Green Box Result
+            # Hara dibba dikhana hai result me
             if final_annotated_img is not None:
                 self.showing_result = True
                 self.display_image(final_annotated_img)
-                # Auto-resume live feed after 4 seconds
+                # 4 second baad wapis camera chalu
                 self.after(4000, self.resume_live_feed)
             
-            # Update Dashboard
+            # Dashboard update karte hai
             self.update_last_attendance(all_attendance)
 
-            self.update_status("Generating Report...", "purple")
+            self.update_status("Report bana rahe hai...", "purple")
             emotion_summary = self.emotion_detection.analyze_multiple_images(images)
             timestamp = datetime.now()
             
-            # Pass first image to report
+            # Pehli photo report me lagayenge
             selected_image = images[0] if images else None
             
             time_str = timestamp.strftime("%H:%M:%S")
@@ -1392,31 +1700,31 @@ class AttendanceApp(ctk.CTk):
                 report_format='both', image_path=selected_image
             )
             
-            # 5. Email (Handle gracefully)
+            # 5. Email (Agar setting on hai toh)
             if self.settings_manager.get("email_enabled"):
                 try:
-                    self.update_status("Sending Email...", "blue")
+                    self.update_status("Email bhej rahe hai...", "blue")
                     
-                    # Get dynamic email from settings or config
+                    # Settings se email lete hai
                     saved_emails = self.settings_manager.get("faculty_emails") or {}
                     recipient = saved_emails.get(subject, "")
                     final_recipient = recipient if recipient else None
                     
                     if self.email_automation.send_attendance_report(subject, report_path, recipient_email=final_recipient):
-                         logger.info(f"Email sent to {final_recipient}")
+                         logger.info(f"Email bhej diya {final_recipient} ko")
                     else:
-                         logger.warning("Email failed or not configured")
+                         logger.warning("Email nahi gaya ya setup nahi hai")
                          
                 except Exception as e:
                     logger.error(f"Email error: {e}")
-                    # Don't crash main thread
+                    # Crash nahi hona chahiye
             
-            self.update_status("Done!", "green")
-            self.after(0, lambda: messagebox.showinfo("Success", f"Marked {len(all_attendance)} students."))
+            self.update_status("Ho gaya bhai!", "green")
+            self.after(0, lambda: messagebox.showinfo("Success", f"{len(all_attendance)} students ki attendance lag gayi."))
             
         except Exception as e:
             logger.error(f"Process error: {e}")
-            self.update_status("Error", "red")
+            self.update_status("Galti ho gayi", "red")
             self.after(0, lambda: messagebox.showerror("Error", str(e)))
         finally:
             self.after(0, lambda: self.capture_btn.configure(state="normal"))
