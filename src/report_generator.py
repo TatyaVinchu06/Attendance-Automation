@@ -249,4 +249,5 @@ class ReportGenerator:
             
         except Exception as e:
             logger.error(f"DOCX report error: {e}")
-            return None
+            return None   
+ 
