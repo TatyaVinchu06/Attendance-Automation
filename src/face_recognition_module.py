@@ -316,5 +316,3 @@ class FaceRecognitionModule:
     def is_trained(self):
         """Check karte hai ki model trained hai ya nahi"""
         return len(self.all_students) > 0
-   
- 
