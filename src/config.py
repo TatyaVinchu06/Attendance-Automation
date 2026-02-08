@@ -320,5 +320,4 @@ __all__ = [
     # Constants
     'APP_NAME', 'APP_VERSION', 'APP_AUTHOR', 'APP_DESCRIPTION',
     'STATUS_READY', 'STATUS_PROCESSING', 'STATUS_COMPLETE', 'STATUS_ERROR',
-]   
- 
+]
