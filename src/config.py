@@ -53,12 +53,20 @@ FACE_DETECTION_MODEL = 'hog'
 # Face recognition tolerance (jitna kam, utna strict, default: 0.6)
 FACE_RECOGNITION_TOLERANCE = 0.6
 
-# Similarity threshold for DeepFace
-# Kam matlab strict checking
-SIMILARITY_THRESHOLD = 0.45
+# DeepFace Model: 'VGG-Face', 'Facenet', 'Facenet512', 'ArcFace'
+# VGG-Face is stable, Facenet512 crashes on this system
+DEEPFACE_MODEL = 'VGG-Face'
+
+# Similarity threshold for DeepFace (VGG-Face Cosine ~0.40, loose 0.50)
+# Increased to 0.75 for group photo recognition with varied angles/lighting
+SIMILARITY_THRESHOLD = 0.75
 
 # Face encoding jitters
 FACE_ENCODING_JITTERS = 1
+
+# Detector backend: 'opencv' (Fastest), 'ssd' (Fast), 'retinaface' (Slow, Accurate)
+# SSD may miss some faces in crowded group photos, but it's fast enough for real-time use
+FACE_DETECTOR_BACKEND = 'ssd'
 
 # Minimum face size (pixels me)
 MIN_FACE_SIZE = 50
@@ -168,20 +176,53 @@ CLEANUP_DIRECTORIES = [IMAGES_DIR, LOGS_DIR, REPORTS_DIR]
 CLEANUP_FILE_EXTENSIONS = ['.jpg', '.png', '.log', '.txt', '.docx']
 
 # ====================================================================
-# SYSTEM SETTINGS
+# REAL-TIME EMOTION MONITOR KI SETTING
+# ====================================================================
+
+# Update interval (seconds me)
+REALTIME_EMOTION_INTERVAL = 2
+
+# Minimum confidence for emotions (0.0 to 1.0)
+EMOTION_CONFIDENCE_THRESHOLD = 0.6
+
+# Smoothing frames (kitne frames ka average lena hai)
+EMOTION_SMOOTHING_FRAMES = 5
+
+# Overlay transparency (0.0 to 1.0)
+OVERLAY_TRANSPARENCY = 0.95
+
+# ====================================================================
+# SYSTEM KI MISCELLANEOUS SETTING
 # ====================================================================
 
 # Logging level
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR
 
-# Maximum concurrent processes
-MAX_WORKERS = 4
+# Performance
+MAX_WORKERS = 4  # Threading ke liye
 
 # Session timeout (seconds)
 SESSION_TIMEOUT = 300
 
 # Auto-save interval (seconds)
 AUTO_SAVE_INTERVAL = 60
+
+# ====================================================================
+# ADVANCED SETTINGS
+# ====================================================================
+
+# Performance stuff
+USE_GPU = False  # GPU hai toh True karo
+PARALLEL_PROCESSING = True
+
+# Debug mode
+DEBUG_MODE = False  # Sab kuch print hoga agar True kiya
+
+# Feature flags
+ENABLE_LIVE_PREVIEW = True
+ENABLE_EMOTION_TRACKING = True
+ENABLE_AUTO_CLEANUP = True
+ENABLE_NOTIFICATIONS = True
 
 # ====================================================================
 # GUI SETTINGS
@@ -285,10 +326,12 @@ __all__ = [
     # Face Recognition
     'FACE_DETECTION_MODEL', 'FACE_RECOGNITION_TOLERANCE',
     'FACE_ENCODING_JITTERS', 'MIN_FACE_SIZE',
+    'FACE_DETECTOR_BACKEND', 'DEEPFACE_MODEL',
     
     # Emotion Detection
     'EMOTION_BACKEND', 'EMOTION_MODEL', 'EMOTIONS',
-    'EMOTION_CONFIDENCE_THRESHOLD',
+    'EMOTION_CONFIDENCE_THRESHOLD', 'REALTIME_EMOTION_INTERVAL',
+    'EMOTION_SMOOTHING_FRAMES', 'OVERLAY_TRANSPARENCY',
     
     # Reports
     'REPORT_FORMAT', 'REPORT_TIMESTAMP_FORMAT', 'INCLUDE_EMOTION_CHARTS',

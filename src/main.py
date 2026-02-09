@@ -16,7 +16,7 @@ import os
 import logging
 import shutil
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Backend modules import kar rahe hai
 from image_capture import ImageCapture
@@ -26,6 +26,8 @@ from report_generator import ReportGenerator
 from email_automation import EmailAutomation
 from data_cleanup import DataCleanup
 from settings_manager import SettingsManager
+from realtime_emotion_monitor import RealtimeEmotionMonitor
+from emotion_overlay import EmotionOverlay
 from config import *
 
 # Logging setup - sab record hoga yaha
@@ -62,6 +64,10 @@ class AttendanceApp(ctk.CTk):
         self.settings_manager = SettingsManager()
         self.email_automation = EmailAutomation(self.settings_manager)
         self.data_cleanup = DataCleanup()
+        
+        # Real-time emotion overlay ke liye
+        self.emotion_monitor = None
+        self.emotion_overlay = None
         
         # Variables (State maintain karne ke liye)
         self.camera_active = False
@@ -136,9 +142,11 @@ class AttendanceApp(ctk.CTk):
             ("🧹  Cleanup", self.show_cleanup)
         ]
 
+        button_font = ctk.CTkFont(family=FONT_FAMILY, size=14, weight="bold")
+
         for i, (text, command) in enumerate(buttons):
             btn = ctk.CTkButton(self.sidebar_frame, text=text, command=command,
-                               font=ctk.CTkFont(family=FONT_FAMILY, size=14, weight="bold"),
+                               font=button_font,
                                fg_color="transparent", 
                                text_color=THEME_COLORS['text_dim'],
                                hover_color=THEME_COLORS['background'],
@@ -146,9 +154,21 @@ class AttendanceApp(ctk.CTk):
             btn.grid(row=i+2, column=0, padx=15, pady=4, sticky="ew")
             self.nav_buttons[text] = btn
             
+        # Emotion Overlay button (Teacher ke liye)
+        self.overlay_btn = ctk.CTkButton(
+            self.sidebar_frame, 
+            text="📊 Teacher Overlay", 
+            command=self.toggle_emotion_overlay, 
+            fg_color="transparent",
+            hover_color=THEME_COLORS['accent'],
+            anchor="w",
+            font=button_font
+        )
+        self.overlay_btn.grid(row=len(buttons)+2, column=0, padx=15, pady=4, sticky="ew") # Place after other buttons
+            
         # --- Bottom Profile ---
         profile_frame = ctk.CTkFrame(self.sidebar_frame, fg_color=THEME_COLORS['background'], corner_radius=10)
-        profile_frame.grid(row=9, column=0, padx=20, pady=20, sticky="ew")
+        profile_frame.grid(row=len(buttons)+3, column=0, padx=20, pady=20, sticky="ew") # Adjust row for profile frame
         
         ctk.CTkLabel(profile_frame, text="👤", font=ctk.CTkFont(size=24)).pack(side="left", padx=15, pady=15)
         user_info = ctk.CTkFrame(profile_frame, fg_color="transparent")
@@ -169,6 +189,16 @@ class AttendanceApp(ctk.CTk):
             elif self.current_page == 'enrollment' and self.camera_active:
                 self.stop_enrollment_camera()
         
+        # Reset grid configuration to prevent layout corruption
+        # This is critical for proper resize behavior when minimizing/maximizing window
+        # Reset all possible columns (supporting up to 3 columns used by various pages)
+        for col in range(3):
+            self.main_frame.grid_columnconfigure(col, weight=0)
+        
+        # Reset row configuration
+        self.main_frame.grid_rowconfigure(0, weight=1)
+        
+        # Now destroy all child widgets
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
@@ -450,6 +480,10 @@ class AttendanceApp(ctk.CTk):
         ctk.CTkButton(ctrl_inner, text="⏹ STOP", command=self.stop_camera,
                      fg_color=THEME_COLORS['danger'], hover_color="#b91c1c", 
                      width=100, height=45, corner_radius=25).pack(side="left", padx=10)
+        
+        # Status Label (Added missing widget)
+        self.status_label = ctk.CTkLabel(controls_frame, text="Ready", text_color="gray", font=ctk.CTkFont(size=12))
+        self.status_label.pack(pady=(0, 10))
 
         # --- Right: Live Feed & Info ---
         info_panel = ctk.CTkFrame(self.main_frame, fg_color=THEME_COLORS['surface'], corner_radius=0)
@@ -655,20 +689,56 @@ class AttendanceApp(ctk.CTk):
         ctk.CTkButton(toolbar, text="This Month", fg_color="transparent", border_width=1, width=100, height=30).pack(side="left", padx=5)
         
         # Monthly Summary Button
-        ctk.CTkButton(toolbar, text="📊 Generate Monthly Summary", command=self.generate_monthly_summary,
+        ctk.CTkButton(toolbar, text="📊 Summary", command=self.generate_monthly_summary,
                      fg_color=THEME_COLORS['primary'], hover_color=THEME_COLORS['primary_dark'], 
-                     width=200, height=35, font=ctk.CTkFont(weight="bold")).pack(side="right", padx=15)
+                     width=100, height=35, font=ctk.CTkFont(weight="bold")).pack(side="right", padx=5)
+
+        # Delete All Button
+        ctk.CTkButton(toolbar, text="🗑️ Delete All", command=self.delete_all_reports,
+                     fg_color=THEME_COLORS['danger'], hover_color="#dc2626", 
+                     width=100, height=35, font=ctk.CTkFont(weight="bold")).pack(side="right", padx=15)
 
         # Reports Grid/List
         reports_frame = ctk.CTkScrollableFrame(container, fg_color="transparent")
         reports_frame.pack(fill="both", expand=True)
 
-        files = sorted([f for f in os.listdir(REPORTS_DIR) if f.endswith(('.txt', '.docx'))], reverse=True)
+        files = sorted([f for f in os.listdir(REPORTS_DIR) if f.endswith(('.txt', '.docx', '.csv'))], reverse=True)
         if not files:
             ctk.CTkLabel(reports_frame, text="No reports generated yet.", text_color="gray", font=ctk.CTkFont(slant="italic")).pack(pady=40)
             
         for f in files:
             self.create_report_card(reports_frame, f)
+
+    def delete_all_reports(self):
+        """Delete ALL report files with confirmation"""
+        files = [f for f in os.listdir(REPORTS_DIR) if f.endswith(('.txt', '.docx', '.csv'))]
+        if not files:
+            messagebox.showinfo("Empty", "No reports to delete.")
+            return
+
+        confirm = messagebox.askyesno(
+            "Confirm Delete All", 
+            f"Are you sure you want to DELETE ALL {len(files)} REPORTS?\n\nThis action cannot be undone!",
+            icon='warning'
+        )
+        if not confirm: return
+
+        count = 0
+        errors = 0
+        for f in files:
+            try:
+                os.remove(os.path.join(REPORTS_DIR, f))
+                count += 1
+            except Exception as e:
+                errors += 1
+                logger.error(f"Failed to delete {f}: {e}")
+        
+        msg = f"Deleted {count} reports successfully."
+        if errors > 0:
+            msg += f"\n\n⚠️ Failed to delete {errors} files (Check if they are open)."
+        
+        messagebox.showinfo("Result", msg)
+        self.show_reports()
 
     def create_report_card(self, parent, filename):
         card = ctk.CTkFrame(parent, fg_color=THEME_COLORS['surface'], corner_radius=10)
@@ -723,7 +793,10 @@ class AttendanceApp(ctk.CTk):
                 self.show_reports()
             else:
                 messagebox.showerror("Error", "Report file not found!")
+                self.show_reports() # Refresh anyway
                 
+        except PermissionError:
+            messagebox.showerror("Permission Denied", f"Cannot delete '{filename}'.\n\nThe file is likely OPEN in another program.\nClose it and try again.")
         except Exception as e:
             logger.error(f"Error deleting report: {e}")
             messagebox.showerror("Error", f"Failed to delete report:\n{str(e)}")
@@ -1410,31 +1483,57 @@ class AttendanceApp(ctk.CTk):
             messagebox.showerror("Error", f"Failed: {e}")
 
     def upload_photo_attendance(self):
-        """Manual attendance via photo upload"""
+        """Manual attendance via photo upload (Threaded)"""
         file_path = filedialog.askopenfilename(filetypes=[("Images", "*.jpg;*.png;*.jpeg")])
         if not file_path: return
         
+        # Show loading state
+        messagebox.showinfo("Processing", "Analyzing image... Please wait.\nThis may take a few seconds.")
+        self.update_status("Analyzing uploaded photo...", "blue")
+        
+        # Run in background thread to prevent freeze
+        threading.Thread(target=self._process_manual_upload, args=(file_path,), daemon=True).start()
+
+    def _process_manual_upload(self, file_path):
+        """Background processing for manual upload"""
         try:
             # Analyze
             attendance = self.face_recognition.recognize_faces(file_path)
             
             if not attendance:
-                messagebox.showwarning("No Faces", "No known students detected in the image.")
+                self.after(0, lambda: messagebox.showwarning("No Faces", "No known students detected in the image."))
+                self.update_status("Ready", "gray")
                 return
             
-            # Show results
+            # Show results in main thread
             msg = "Faces Found:\n" + "\n".join([f"- {name}: {status}" for name, status in attendance.items()])
-            messagebox.showinfo("Analysis Result", msg)
+            self.after(0, lambda: messagebox.showinfo("Analysis Result", msg))
             
             # Mark Attendance in feed
             timestamp = datetime.now().strftime("%H:%M:%S")
             for name, status in attendance.items():
                if status == "Present":
-                   self.update_recent_feed(name, timestamp)
+                   self.after(0, self.update_recent_feed, name, timestamp)
             
-            # Ask user to select subject for report generation
+            # Ask for subject in main thread (using a variable and event or just after callback)
+            # Since simpledialog is blocking, we should ideally run it in main thread.
+            # But we are in a thread. Let's use after to schedule the rest of the flow?
+            # Or better, just continue here but realize simpledialog might block this thread (which is fine)
+            
+            self.after(0, lambda: self._handle_manual_report_generation(attendance, file_path))
+                
+        except Exception as e:
+            logger.error(f"Upload error: {e}")
+            self.after(0, lambda: messagebox.showerror("Error", f"Analysis failed: {str(e)}"))
+            self.update_status("Error", "red")
+
+    def _handle_manual_report_generation(self, attendance, file_path):
+        """Handle report generation part of manual upload (Back in main thread)"""
+        try:
             from tkinter import simpledialog
             subjects = list(TIMETABLE.values())
+            # Default fallback if empty
+            if not subjects: subjects = ["DEFAULT"]
             
             subject_dialog = ctk.CTkInputDialog(
                 text=f"Select subject for this attendance:\n\nAvailable: {', '.join(subjects)}\n\nEnter subject name:",
@@ -1443,54 +1542,67 @@ class AttendanceApp(ctk.CTk):
             subject = subject_dialog.get_input()
             
             if not subject or subject.strip() == "":
-                # User cancelled or didn't enter anything
-                messagebox.showinfo("Info", "✅ Attendance marked!\n\n⚠️ No report generated (subject not selected)")
+                messagebox.showinfo("Info", "✅ Attendance marked locally!\n\n⚠️ No report generated (subject not selected)")
+                self.update_status("Ready", "gray")
                 return
             
             subject = subject.strip().upper()
             
-            # Generate reports and send email
-            try:
-                time_now = datetime.now().strftime("%H:%M:%S")
+            # Generate reports and send email (Can be threaded too if slow, but usually fast enough)
+            # For safety, let's keep it here or spawn another thread if needed. 
+            # Report generation is usually disk I/O, might be slightly slow but better than freezing for 10s.
+            
+            time_now = datetime.now().strftime("%H:%M:%S")
+            
+            # Generate report with the uploaded photo
+            report_paths = self.report_generator.generate_report(
+                attendance=attendance,
+                emotion_summary={},  # No emotion data from manual upload
+                subject=subject,
+                time_start=time_now,
+                time_end=time_now,
+                report_format='both',
+                image_path=file_path
+            )
+            
+            if report_paths:
+                logger.info(f"Reports generated: {report_paths}")
                 
-                # Generate report with the uploaded photo
-                report_paths = self.report_generator.generate_report(
-                    attendance=attendance,
-                    emotion_summary={},  # No emotion data from manual upload
-                    subject=subject,
-                    time_start=time_now,
-                    time_end=time_now,
-                    report_format='both',
-                    image_path=file_path  # Include the uploaded photo in the report
-                )
-                
-                if report_paths:
-                    logger.info(f"Reports generated: {report_paths}")
+                # Send email if enabled
+                if self.settings_manager.get("email_enabled"):
+                    saved_emails = self.settings_manager.get("faculty_emails") or {}
+                    recipient = saved_emails.get(subject, "")
                     
-                    # Send email if enabled
-                    if self.settings_manager.get("email_enabled"):
-                        saved_emails = self.settings_manager.get("faculty_emails") or {}
-                        recipient = saved_emails.get(subject, "")
-                        
-                        if recipient:  # Only try to send if recipient is configured
-                            if self.email_automation.send_attendance_report(subject, report_paths, recipient_email=recipient):
-                                logger.info(f"Email sent successfully to {recipient}")
-                                messagebox.showinfo("Success", f"✅ Report generated and email sent to {recipient}!\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
-                            else:
-                                messagebox.showinfo("Success", f"✅ Report generated!\n\n⚠️ Email failed to send\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
-                        else:
-                            # No recipient configured for Manual Upload
-                            messagebox.showinfo("Success", f"✅ Report generated!\n\n💡 Tip: Configure faculty email for 'Manual Upload' in Settings to auto-send reports\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+                    if recipient:
+                        # Send email in background
+                        threading.Thread(
+                            target=self._send_manual_email, 
+                            args=(subject, report_paths, recipient, len([s for s in attendance.values() if s == 'Present'])),
+                            daemon=True
+                        ).start()
                     else:
-                        messagebox.showinfo("Success", f"✅ Report generated!\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
-                
-            except Exception as e:
-                logger.error(f"Report/Email error: {e}")
-                messagebox.showwarning("Partial Success", f"✅ Attendance marked\n⚠️ Report generation failed: {str(e)}")
-                
+                        messagebox.showinfo("Success", f"✅ Report generated!\n\n💡 Tip: Configure Faculty Email in Settings.\n\nStudents: {len([s for s in attendance.values() if s == 'Present'])}")
+                else:
+                    messagebox.showinfo("Success", f"✅ Report generated!\n\nStudents marked: {len([s for s in attendance.values() if s == 'Present'])}")
+            
+            self.update_status("Ready", "gray")
+
         except Exception as e:
-            logger.error(f"Upload error: {e}")
-            messagebox.showerror("Error", f"Analysis failed: {str(e)}")
+            logger.error(f"Report generation error: {e}")
+            messagebox.showwarning("Partial Success", f"✅ Attendance marked\n⚠️ Report generation failed: {str(e)}")
+            self.update_status("Error", "red")
+
+    def _send_manual_email(self, subject, report_paths, recipient, student_count):
+        """Background email sender helper"""
+        try:
+            success = self.email_automation.send_attendance_report(subject, report_paths, recipient_email=recipient)
+            if success:
+                logger.info(f"Email sent successfully to {recipient}")
+                self.after(0, lambda: messagebox.showinfo("Success", f"✅ Report generated & Email sent to {recipient}!\n\nStudents: {student_count}"))
+            else:
+                self.after(0, lambda: messagebox.showinfo("Success", f"✅ Report generated!\n\n⚠️ Email failed to send.\n\nStudents: {student_count}"))
+        except Exception as e:
+            logger.error(f"Manual email error: {e}")
 
     def show_cleanup(self):
         self.clear_content()
@@ -1558,7 +1670,7 @@ class AttendanceApp(ctk.CTk):
             self.capture_btn.configure(state="normal")
             
             # Timer reset karte hai
-            self.last_analysis_time = datetime.now()
+            self.last_analysis_time = datetime.now() - timedelta(minutes=100) # Force immediate analysis
             self.last_attendance_time = datetime.now()
             
             self.update_camera_feed()
@@ -1634,6 +1746,59 @@ class AttendanceApp(ctk.CTk):
              self.last_attendance_time = now
              # Asli app me yaha database save hoga
              self.after(0, lambda: messagebox.showinfo("Autolink", "✅ Attendance lag gayi."))
+
+    def toggle_emotion_overlay(self):
+        """Teacher overlay toggle karte hai"""
+        try:
+            # Pehli baar hai toh initialize karte hai
+            if self.emotion_monitor is None:
+                logger.info("Emotion monitor initialize kar rahe hai...")
+                
+                # Camera initialized hai?
+                if not self.image_capture.is_camera_active:
+                    if not self.image_capture.initialize_camera():
+                        messagebox.showerror("Error", "Camera nahi chala bhai.\nPehle camera check karo.")
+                        return
+                
+                # Monitor banate hai
+                self.emotion_monitor = RealtimeEmotionMonitor(camera_instance=self.image_capture.camera)
+                
+                # Overlay banate hai
+                self.emotion_overlay = EmotionOverlay(self.emotion_monitor)
+                
+                # Monitoring start karte hai
+                if not self.emotion_monitor.start_monitoring():
+                    messagebox.showerror("Error", "Monitoring start nahi hui.\nLogs check karo.")
+                    return
+                
+                # Overlay dikhate hai
+                self.emotion_overlay.show_window()
+                
+                logger.info("Emotion overlay launch ho gaya!")
+                messagebox.showinfo("Success", "Teacher Overlay chalu ho gaya!\n\nWindow ko drag kar sakte ho.\nRight-click se pause/resume karo.")
+            
+            else:
+                # Already initialized hai, bas toggle karte hai
+                self.emotion_overlay.toggle_visibility()
+                
+        except Exception as e:
+            logger.error(f"Overlay toggle error: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Kuch gadbad ho gayi:\n{str(e)}")
+    
+    def cleanup_overlay(self):
+        """Overlay cleanup karte hai (jab app band ho)"""
+        try:
+            if self.emotion_monitor:
+                self.emotion_monitor.stop_monitoring()
+            if self.emotion_overlay:
+                self.emotion_overlay.destroy_window()
+            logger.info("Overlay cleanup done")
+        except:
+            pass
+    
+    def __del__(self):
+        """App close hone se pehle cleanup"""
+        self.cleanup_overlay()
 
     def _update_live_feed(self, frame):
         """Background me face dhoondhte hai taaki screen na atkegi"""
@@ -1731,7 +1896,10 @@ class AttendanceApp(ctk.CTk):
             self.after(2000, lambda: self.update_status("Ready", "gray"))
 
     def update_status(self, text, color):
-        self.after(0, lambda: self.status_label.configure(text=text, text_color=color))
+        def _update():
+            if hasattr(self, 'status_label') and self.status_label.winfo_exists():
+                self.status_label.configure(text=text, text_color=color)
+        self.after(0, _update)
 
     def show_enrollment_dialog(self):
         """Show improved enrollment dialog with roll number"""

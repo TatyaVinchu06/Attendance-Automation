@@ -11,7 +11,13 @@ import logging
 from pathlib import Path
 from deepface import DeepFace
 import pandas as pd
-from config import *
+from config import (
+    STUDENT_DATASET_DIR, 
+    ENCODINGS_FILE, 
+    DEEPFACE_MODEL, 
+    FACE_DETECTOR_BACKEND, 
+    SIMILARITY_THRESHOLD
+)
 
 logger = logging.getLogger(__name__)
 
@@ -120,36 +126,10 @@ class FaceRecognitionModule:
             logger.error(f"Load karne me error: {e}")
             return False
     
-    def _process_layer_results(self, dfs, student_votes, model_name, threshold):
-        """Ek model ka result process karte hai"""
-        if not dfs or len(dfs) == 0:
-            return
-        
-        for df in dfs:
-            if not df.empty:
-                for index, row in df.iterrows():
-                    distance = row.get('distance', float('inf'))
-                    
-                    if distance > threshold:
-                        continue  # Weak match hai toh chhod do
-                    
-                    # Student ka naam nikalte hai path se
-                    identity_path = str(row['identity'])
-                    normalized_path = identity_path.replace('\\', '/')
-                    parts = normalized_path.split('/')
-                    
-                    if 'student_dataset' in parts:
-                        idx = parts.index('student_dataset')
-                        if idx + 1 < len(parts):
-                            student_name = parts[idx + 1]
-                            if student_name in self.all_students:
-                                student_votes[student_name] = student_votes.get(student_name, 0) + 1
-                                logger.debug(f"{model_name}: {student_name} (match pakka hai, dist: {distance:.3f})")
-    
     def recognize_faces(self, image_path, return_annotated=False):
         """
-        Photo me chehra pehchante hai.
-        3 layer security lagayi hai taaki galti na ho.
+        FAST & ACCURATE Face Recognition (Rebuilt)
+        Uses DeepFace (VGG-Face) + SSD Detector.
         """
         if not self.all_students:
             logger.error("Bhai pehle students toh add karo database me")
@@ -162,151 +142,118 @@ class FaceRecognitionModule:
             if return_annotated:
                 annotated_img = cv2.imread(image_path)
             
-            # Agar photo bahut badi hai toh chhota karte hai taaki fast chale
+            # --- OPTIMIZATION: Resize if 4K ---
             original_path = image_path
             img = cv2.imread(image_path)
             if img is not None:
-                height, width = img.shape[:2]
-                # 4K se bada hai toh resize karo
-                if width > 3840 or height > 2160:
-                    scale = min(1920/width, 1080/height)
+                print(f"[LIVE DEBUG] Analyzing frame: {image_path} | Size: {img.shape}")
+                h, w = img.shape[:2]
+                if w > 3840 or h > 2160:
+                    scale = 0.5
                     img_resized = cv2.resize(img, None, fx=scale, fy=scale)
-                    temp_path = os.path.join(os.path.dirname(image_path), f"temp_resized_{os.path.basename(image_path)}")
+                    temp_path = os.path.join(os.path.dirname(image_path), f"temp_fast_{os.path.basename(image_path)}")
                     cv2.imwrite(temp_path, img_resized)
                     image_path = temp_path
-                    logger.info(f"Photo resize kar di speed badhane ke liye")
             
-            # 3 LAYER KA SYSTEM LAGAYA HAI
-            # Kam se kam 2 models haan bolne chahiye tabhi present lagegi
-            logger.info("3 models se check kar rahe hai...")
+            # --- CORE LOGIC: DeepFace.find (Single Pass) ---
+            # Backend: 'ssd' (Fast & Accurate) | Model: Configured (Facenet512/VGG-Face)
+            logger.info(f"⚡ Analyzing face with SSD + {DEEPFACE_MODEL}...")
             
-            # Votes count karenge
-            student_votes = {}  # {student_name: vote_count}
-            
-            # LAYER 1: VGG-Face (Sabse main wala)
-            logger.debug("Layer 1: VGG-Face check kar raha hai")
             try:
-                dfs_vgg = DeepFace.find(
+                dfs = DeepFace.find(
                     img_path=image_path,
                     db_path=self.database_path,
-                    model_name="VGG-Face",
-                    detector_backend="retinaface",
+                    model_name=DEEPFACE_MODEL,
+                    detector_backend=FACE_DETECTOR_BACKEND,  # Configured (opencv)
+                    distance_metric="cosine",
+                    enforce_detection=False,
+                    silent=True,
+                    threshold=SIMILARITY_THRESHOLD # Config se uthaya (0.50)
+                )
+                
+                # --- LIVE DEBUGGING ---
+                if len(dfs) > 0:
+                    df = dfs[0]
+                    if not df.empty:
+                         print(f"[LIVE DEBUG] Found matches: {len(df)}")
+                         if 'distance' in df.columns:
+                             print(f"[LIVE DEBUG] Top match distance: {df.iloc[0]['distance']:.4f}")
+                         if 'identity' in df.columns:
+                             print(f"[LIVE DEBUG] Top match identity: {df.iloc[0]['identity']}")
+                    else:
+                         print(f"[LIVE DEBUG] Detected face but NO MATCH found (Threshold: {SIMILARITY_THRESHOLD})")
+                else:
+                     pass # No face detected
+
+
+
+            except ValueError:
+                # SSD requires tensorflow/opencv specific setup, fallback to retinaface if fails?
+                # No, we assume SSD works. If error, likely no face or library issue.
+                logger.warning("SSD detector failed, trying opencv as backup...")
+                dfs = DeepFace.find(
+                    img_path=image_path,
+                    db_path=self.database_path,
+                    model_name=DEEPFACE_MODEL,
+                    detector_backend="opencv",
+                    distance_metric="cosine",
                     enforce_detection=False,
                     silent=True
                 )
-                self._process_layer_results(dfs_vgg, student_votes, "VGG-Face", SIMILARITY_THRESHOLD)
-            except Exception as e:
-                logger.warning(f"Layer 1 (VGG-Face) fail ho gaya: {e}")
+
+
+            # --- DEBUG: Show structure of results ---
+            print(f"[DEBUG] DeepFace.find returned {len(dfs)} dataframe(s)")
+            for idx, df in enumerate(dfs):
+                print(f"[DEBUG] DF[{idx}]: {len(df)} row(s), empty={df.empty}")
+                if not df.empty:
+                    print(f"[DEBUG] DF[{idx}] columns: {list(df.columns)}")
+                    print(f"[DEBUG] DF[{idx}] first row: {df.iloc[0].to_dict()}")
+        
+            # --- PROCESS RESULTS ---
+            detected_students = set()
             
-            # LAYER 2: Facenet (Cross check ke liye)
-            logger.debug("Layer 2: Facenet confirm kar raha hai")
-            try:
-                dfs_facenet = DeepFace.find(
-                    img_path=image_path,
-                    db_path=self.database_path,
-                    model_name="Facenet",
-                    detector_backend="retinaface",
-                    enforce_detection=False,
-                    silent=True
-                )
-                # Facenet ka scale alag hota hai
-                self._process_layer_results(dfs_facenet, student_votes, "Facenet", 10.0)
-            except Exception as e:
-                logger.warning(f"Layer 2 (Facenet) fail ho gaya: {e}")
-            
-            # LAYER 3: ArcFace (Final mahr)
-            logger.debug("Layer 3: ArcFace final check kar raha hai")
-            try:
-                dfs_arcface = DeepFace.find(
-                    img_path=image_path,
-                    db_path=self.database_path,
-                    model_name="ArcFace",
-                    detector_backend="retinaface",
-                    enforce_detection=False,
-                    silent=True
-                )
-                self._process_layer_results(dfs_arcface, student_votes, "ArcFace", 4.0)
-            except Exception as e:
-                logger.warning(f"Layer 3 (ArcFace) fail ho gaya: {e}")
-            
-            # DECISION TIME: 2/3 votes chahiye
-            logger.info(f"Total votes: {student_votes}")
-            
-            # Jisko 2 se zyada vote mile wo Present
-            marked_students = set()
-            for student_name, votes in student_votes.items():
-                if votes >= 2 and student_name in attendance:
-                    attendance[student_name] = "Present"
-                    marked_students.add(student_name)
-                    logger.info(f"✓ CONFIRMED: {student_name} (Sahi hai, {votes}/3 models ne haan bola)")
-                elif votes == 1:
-                    logger.info(f"✗ REJECTED: {student_name} (Bas 1 model bola, doubt hai ispe)")
-            
-            # Photo pe box aur naam banate hai agar chahiye toh
-            if return_annotated and annotated_img is not None and marked_students:
-                # Box banane ke liye wapis run karte hai
-                try:
-                    dfs_final = DeepFace.find(
-                        img_path=image_path,
-                        db_path=self.database_path,
-                        model_name="VGG-Face",
-                        detector_backend="retinaface",
-                        enforce_detection=False,
-                        silent=True
-                    )
-                    
-                    if dfs_final and len(dfs_final) > 0:
-                        for df in dfs_final:
-                            if not df.empty:
-                                for index, row in df.iterrows():
-                                    identity_path = str(row['identity'])
-                                    normalized_path = identity_path.replace('\\', '/')
-                                    parts = normalized_path.split('/')
+            if len(dfs) > 0:
+                for df in dfs:
+                    if not df.empty:
+                        for index, row in df.iterrows():
+                            # Extract Name
+                            identity_path = str(row['identity'])
+                            # Path logic to get student name
+                            normalized_path = identity_path.replace('\\', '/')
+                            parts = normalized_path.split('/')
+                            
+                            # Standard structure: dataset/student_name/image.jpg
+                            # We look for folder name that matches our known students
+                            for student in self.all_students:
+                                if f"/{student}/" in normalized_path or normalized_path.endswith(f"/{student}"):
+                                    attendance[student] = "Present"
+                                    detected_students.add(student)
+                                    logger.info(f"✅ MATCH: {student} (Dist: {row.get('distance', 0):.4f})")
                                     
-                                    if 'student_dataset' in parts:
-                                        idx = parts.index('student_dataset')
-                                        if idx + 1 < len(parts):
-                                            student_name = parts[idx + 1]
-                                            
-                                            # Sirf confirm walo pe box banayenge
-                                            if student_name in marked_students:
-                                                x = int(row['source_x'])
-                                                y = int(row['source_y'])
-                                                w = int(row['source_w'])
-                                                h = int(row['source_h'])
-                                                votes = student_votes.get(student_name, 0)
-                                                
-                                                # Hara dibba banate hai
-                                                cv2.rectangle(annotated_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                                                # Naam likhte hai
-                                                label = f"{student_name} ({votes}/3)"
-                                                cv2.putText(annotated_img, label, (x, y-10), 
-                                                           cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                except Exception as e:
-                    logger.warning(f"Box banane me galti huyi: {e}")
+                                    # Draw Box
+                                    if return_annotated and annotated_img is not None:
+                                        x, y = int(row.get('source_x', 0)), int(row.get('source_y', 0))
+                                        w, h = int(row.get('source_w', 0)), int(row.get('source_h', 0))
+                                        cv2.rectangle(annotated_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                                        cv2.putText(annotated_img, f"{student}", (x, y-10), 
+                                                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                                    break
             
-            present_count = sum(1 for status in attendance.values() if status == "Present")
-            logger.info(f"Attendance lag gayi: {present_count}/{len(attendance)} present hai")
-            
-            # Temporary file delete karte hai, kachra saaf
+            if not detected_students:
+                logger.info("❌ No matching faces found.")
+
+            # --- CLEANUP ---
             if image_path != original_path and os.path.exists(image_path):
-                try:
-                    os.remove(image_path)
-                except:
-                    pass
-            
+                try: os.remove(image_path)
+                except: pass
+                
             if return_annotated:
                 return attendance, annotated_img
             return attendance
-            
+
         except Exception as e:
-            logger.error(f"Chehra pehchanne me error aaya: {e}")
-            # Error aane pe bhi file saaf karte hai
-            if 'original_path' in locals() and image_path != original_path and os.path.exists(image_path):
-                try:
-                    os.remove(image_path)
-                except:
-                    pass
+            logger.error(f"Analysis Error: {e}")
             return ({}, None) if return_annotated else {}
     
     def get_all_students(self):

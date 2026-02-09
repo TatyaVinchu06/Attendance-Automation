@@ -1,0 +1,89 @@
+2026-02-09 18:46:26.321762: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-02-09 18:46:30.809231: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From C:\Users\ombha\OneDrive\Desktop\adp\cam\venv\Lib\site-packages\tf_keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+
+============================================================
+AI ATTENDANCE SYSTEM - SYSTEM TEST
+============================================================
+
+============================================================
+Testing Package Imports
+============================================================
+  [PASS] opencv-python
+  [PASS] Pillow
+  [PASS] python-docx
+  [PASS] schedule
+  [PASS] deepface
+  [PASS] numpy
+
+============================================================
+Testing Directory Structure
+============================================================
+  [PASS] Data Directory: C:\Users\ombha\OneDrive\Desktop\adp\cam\tests\..\data
+  [PASS] Images Directory: C:\Users\ombha\OneDrive\Desktop\adp\cam\tests\..\data\images
+  [PASS] Logs Directory: C:\Users\ombha\OneDrive\Desktop\adp\cam\tests\..\data\logs
+  [PASS] Reports Directory: C:\Users\ombha\OneDrive\Desktop\adp\cam\tests\..\data\reports
+  [PASS] Student Dataset: C:\Users\ombha\OneDrive\Desktop\adp\cam\tests\..\data\student_dataset
+
+============================================================
+Testing System Modules
+============================================================
+  [PASS] image_capture.py
+  [PASS] face_recognition_module.py
+  [PASS] emotion_detection.py
+  [PASS] report_generator.py
+  [PASS] email_automation.py
+  [PASS] data_cleanup.py
+
+============================================================
+Testing Camera
+============================================================
+  [PASS] Camera 0 is working
+    Resolution: 640x480
+
+============================================================
+Testing Student Dataset
+============================================================
+  [PASS] Found 6 student(s):
+    - 10_Om_Bhamare: 5 image(s)
+    - 11_xyz: 5 image(s)
+    - 17_Prathamesh_Dhanwate: 5 image(s)
+    - 1_Rakesh_bare: 5 image(s)
+    - 2_Gavrao_Pacholkar: 5 image(s)
+    - 3_Sai_Gangurge: 5 image(s)
+
+============================================================
+Testing Face Recognition
+============================================================
+  [PASS] Face encodings file exists
+  [PASS] Loaded encodings for 0 students
+
+============================================================
+Testing Email Configuration
+============================================================
+  SMTP Server: smtp.gmail.com:587
+  Sender Email: your.email@gmail.com
+  [WARN] Email password not configured
+    Update SENDER_PASSWORD in config.py
+
+============================================================
+TEST SUMMARY
+============================================================
+  [PASS] - Package Imports
+  [PASS] - Directory Structure
+  [PASS] - System Modules
+  [PASS] - Camera
+  [PASS] - Student Dataset
+  [PASS] - Face Recognition
+  [FAIL] - Email Configuration
+
+Results: 6/7 tests passed
+
+[WARN] Some tests failed. Please fix the issues above.
+
+Common fixes:
+  - Install missing packages: pip install -r requirements.txt
+  - Add student photos to data/student_dataset/
+  - Configure email in config.py
+  - Check camera permissions

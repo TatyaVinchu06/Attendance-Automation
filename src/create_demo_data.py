@@ -12,7 +12,7 @@ from config import STUDENT_DATASET_DIR
 
 # Demo students
 DEMO_STUDENTS = [
-    "Om_Bhardwaj",
+    "Om_Bhamare",
     "Rahul_Sharma",
     "Neha_Patel",
     "Arjun_Singh",
@@ -83,7 +83,7 @@ INSTRUCTIONS:
 
 EXAMPLE NAMES:
 --------------
-- Om_Bhardwaj
+- Om_Bhaamre
 - Rahul_Sharma  
 - Neha_Patel
 - Arjun_Singh
