@@ -57,16 +57,19 @@ FACE_RECOGNITION_TOLERANCE = 0.6
 # VGG-Face is stable, Facenet512 crashes on this system
 DEEPFACE_MODEL = 'VGG-Face'
 
-# Similarity threshold for DeepFace (VGG-Face Cosine ~0.40, loose 0.50)
-# Increased to 0.75 for group photo recognition with varied angles/lighting
-SIMILARITY_THRESHOLD = 0.75
+# Similarity threshold for DeepFace cosine distance.
+# For our custom multi-face engine:
+#   - 0.40–0.50 = very strict (only near-perfect matches)
+#   - 0.60–0.75 = practical for classroom / angle changes
+# Increase to 0.75 so group photos with different angles still match.
+SIMILARITY_THRESHOLD = 0.55
 
 # Face encoding jitters
 FACE_ENCODING_JITTERS = 1
 
 # Detector backend: 'opencv' (Fastest), 'ssd' (Fast), 'retinaface' (Slow, Accurate)
-# SSD may miss some faces in crowded group photos, but it's fast enough for real-time use
-FACE_DETECTOR_BACKEND = 'ssd'
+# Use 'retinaface' for much better detection in group photos (multiple faces, angles).
+FACE_DETECTOR_BACKEND = 'retinaface'
 
 # Minimum face size (pixels me)
 MIN_FACE_SIZE = 50

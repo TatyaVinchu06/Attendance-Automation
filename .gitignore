@@ -18,3 +18,8 @@ data/
 .vscode/
 .idea/
 *.swp
+
+# Large Files
+models/
+*.onnx
+*.pkl.bak

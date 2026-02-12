@@ -11,8 +11,10 @@ numpy>=1.24.0
 # Face Recognition & Emotion Detection
 # ====================================================================
 # Using DeepFace instead of face-recognition (no dlib required)
+# Face Recognition (InsightFace)
+insightface>=0.7.3
+onnxruntime>=1.16.0
 deepface>=0.0.75
-tf-keras>=2.15.0
 
 # ====================================================================
 # Image Processing

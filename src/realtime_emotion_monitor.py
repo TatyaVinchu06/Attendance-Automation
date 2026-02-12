@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Real-time Emotion Monitor
-Live emotions track karta hai bina images save kiye
+Real-time Emotion Monitor (Mock)
+Live emotions track karta hai bina images save kiye (Currently Disabled)
 """
 
 import cv2
@@ -10,14 +10,14 @@ import threading
 import time
 import logging
 from collections import deque, Counter
-from deepface import DeepFace
+# from deepface import DeepFace  # Disabled
 from config import *
 
 logger = logging.getLogger(__name__)
 
 
 class RealtimeEmotionMonitor:
-    """Real-time emotion monitoring ke liye class"""
+    """Real-time emotion monitoring ke liye class (Mock Version)"""
     
     def __init__(self, camera_instance=None):
         self.camera = camera_instance
@@ -28,6 +28,8 @@ class RealtimeEmotionMonitor:
         self.last_update_time = time.time()
         self.lock = threading.Lock()
         self.monitor_thread = None
+        
+        logger.warning("Realtime Emotion Monitor is running in MOCK mode (DeepFace disabled).")
         
         # Emotion emojis
         self.emotion_emojis = {
@@ -64,7 +66,7 @@ class RealtimeEmotionMonitor:
         self.is_running = True
         self.monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitor_thread.start()
-        logger.info("Real-time emotion monitoring chalu ho gaya")
+        logger.info("Real-time emotion monitoring chalu ho gaya (Mock Mode)")
         return True
     
     def stop_monitoring(self):
@@ -84,18 +86,21 @@ class RealtimeEmotionMonitor:
                     time.sleep(0.1)
                     continue
                 
-                # Frame lete hai
-                ret, frame = self.camera.read()
-                if not ret or frame is None:
-                    time.sleep(0.5)
-                    continue
+                # Frame lete hai (Mock mode mein bhi frame read karna chahiye taaki camera busy na ho)
+                # But if usage clashes, we can skip. Let's assume camera is shared or thread safe if implemented correctly.
+                # Actually, in mock mode, we can just sleep and simulate data.
+                time.sleep(1.0) # Simulate processing time
                 
-                # Emotions analyze karte hai
-                emotions_data = self._analyze_frame(frame)
+                # Mock Data
+                mock_emotions = {
+                    'emotions': ['neutral'],
+                    'face_count': 1,
+                    'timestamp': time.time()
+                }
                 
                 # Update karte hai
                 with self.lock:
-                    self.emotion_history.append(emotions_data)
+                    self.emotion_history.append(mock_emotions)
                     self.current_emotions = self._aggregate_emotions()
                     self.last_update_time = current_time
                 
@@ -104,47 +109,10 @@ class RealtimeEmotionMonitor:
                 time.sleep(1.0)
     
     def _analyze_frame(self, frame):
-        """Ek frame me emotions nikalta hai (in-memory processing)"""
-        emotions_list = []
-        face_count = 0
-        
-        try:
-            # Frame ko thoda chota karte hai speed ke liye
-            small_frame = cv2.resize(frame, (320, 240))
-            
-            # DeepFace se analyze karte hai
-            results = DeepFace.analyze(
-                small_frame,
-                actions=['emotion'],
-                enforce_detection=False,
-                detector_backend=EMOTION_BACKEND,
-                silent=True
-            )
-            
-            # Single face ya multiple faces
-            if isinstance(results, dict):
-                results = [results]
-            
-            # Har face ke liye
-            for result in results:
-                if 'emotion' in result:
-                    emotion_scores = result['emotion']
-                    dominant_emotion = max(emotion_scores, key=emotion_scores.get)
-                    confidence = emotion_scores[dominant_emotion]
-                    
-                    # Confidence check karte hai
-                    if confidence >= EMOTION_CONFIDENCE_THRESHOLD * 100:
-                        emotions_list.append(dominant_emotion.lower())
-                        face_count += 1
-            
-            logger.debug(f"{face_count} faces detect kiye, emotions: {emotions_list}")
-            
-        except Exception as e:
-            logger.debug(f"Frame analysis me error (normal hai agar no face): {e}")
-        
+        """Ek frame me emotions nikalta hai (Mock)"""
         return {
-            'emotions': emotions_list,
-            'face_count': face_count,
+            'emotions': ['neutral'],
+            'face_count': 1,
             'timestamp': time.time()
         }
     

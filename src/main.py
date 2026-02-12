@@ -1444,19 +1444,25 @@ class AttendanceApp(ctk.CTk):
             return
             
         try:
-            # removing folder
+            # Step 1: Remove from database (in-memory)
+            if hasattr(self.face_recognition.db, "remove_student"):
+                self.face_recognition.db.remove_student(student_id)
+                self.face_recognition.db.save_database()
+                logger.info(f"Removed {student_id} from database")
+            
+            # Step 2: Remove folder from student_dataset
             path = os.path.join(STUDENT_DATASET_DIR, student_id)
             if os.path.exists(path):
                 shutil.rmtree(path)
+                logger.info(f"Deleted folder: {path}")
                 
-            # Trigger retrain
+            # Step 3: Trigger retrain to update embeddings
             threading.Thread(target=self.face_recognition.train_face_encodings, daemon=True).start()
             
             messagebox.showinfo("Deleted", f"Student {student_id} deleted successfully.\nModel is retraining in background.")
             self.show_student_database() # Refresh list
             
         except Exception as e:
-            logger.error(f"Error deleting student: {e}")
             logger.error(f"Error deleting student: {e}")
             messagebox.showerror("Error", f"Failed to delete: {e}")
 
@@ -1473,6 +1479,17 @@ class AttendanceApp(ctk.CTk):
                     shutil.rmtree(path)
                 elif item.endswith('.pkl'):
                     os.remove(path)
+
+            # Also delete global encodings file if present
+            if os.path.exists(ENCODINGS_FILE):
+                try:
+                    os.remove(ENCODINGS_FILE)
+                except Exception as e:
+                    logger.warning(f"Could not remove encodings file: {e}")
+
+            # Refresh face recognition module (empty student list, no encodings)
+            if hasattr(self.face_recognition, "refresh_from_disk"):
+                self.face_recognition.refresh_from_disk()
             
             # Reset UI
             messagebox.showinfo("Deleted", "All student records have been deleted.")
@@ -1885,7 +1902,8 @@ class AttendanceApp(ctk.CTk):
                     # Crash nahi hona chahiye
             
             self.update_status("Ho gaya bhai!", "green")
-            self.after(0, lambda: messagebox.showinfo("Success", f"{len(all_attendance)} students ki attendance lag gayi."))
+            # Show attendance result with larger OK button
+            self.after(0, lambda: self._show_attendance_result_dialog(all_attendance))
             
         except Exception as e:
             logger.error(f"Process error: {e}")
@@ -2104,6 +2122,90 @@ class AttendanceApp(ctk.CTk):
         
         # Safe update
         self.after(0, lambda: self.recent_label.configure(text=text))
+    
+    def _show_attendance_result_dialog(self, attendance):
+        """Show attendance result with improved dialog and larger OK button"""
+        present = [name for name, status in attendance.items() if status == "Present"]
+        absent = [name for name, status in attendance.items() if status == "Absent"]
+        
+        # Create custom dialog
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Attendance Result")
+        dialog.geometry("550x600")
+        dialog.resizable(False, False)
+        
+        # Center on parent
+        x = self.winfo_x() + (self.winfo_width() // 2) - 275
+        y = self.winfo_y() + (self.winfo_height() // 2) - 300
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Main container
+        container = ctk.CTkFrame(dialog, fg_color=THEME_COLORS['background'])
+        container.pack(fill="both", expand=True)
+        
+        # Header
+        header = ctk.CTkFrame(container, fg_color=THEME_COLORS['success'], corner_radius=0)
+        header.pack(fill="x")
+        ctk.CTkLabel(header, text="✅ Attendance Marked Successfully", 
+                    font=ctk.CTkFont(size=20, weight="bold"),
+                    text_color="white").pack(pady=20)
+        
+        # Stats card
+        stats_frame = ctk.CTkFrame(container, fg_color=THEME_COLORS['surface'], corner_radius=10)
+        stats_frame.pack(fill="x", padx=20, pady=20)
+        
+        stats_grid = ctk.CTkFrame(stats_frame, fg_color="transparent")
+        stats_grid.pack(pady=15)
+        stats_grid.grid_columnconfigure((0, 1, 2), weight=1)
+        
+        # Total
+        ctk.CTkLabel(stats_grid, text=str(len(attendance)),
+                    font=ctk.CTkFont(size=32, weight="bold"),
+                    text_color=THEME_COLORS['text']).grid(row=0, column=0, padx=20)
+        ctk.CTkLabel(stats_grid, text="Total", text_color="gray").grid(row=1, column=0)
+        
+        # Present
+        ctk.CTkLabel(stats_grid, text=str(len(present)),
+                    font=ctk.CTkFont(size=32, weight="bold"),
+                    text_color=THEME_COLORS['success']).grid(row=0, column=1, padx=20)
+        ctk.CTkLabel(stats_grid, text="Present", text_color="gray").grid(row=1, column=1)
+        
+        # Absent
+        ctk.CTkLabel(stats_grid, text=str(len(absent)),
+                    font=ctk.CTkFont(size=32, weight="bold"),
+                    text_color=THEME_COLORS['danger']).grid(row=0, column=2, padx=20)
+        ctk.CTkLabel(stats_grid, text="Absent", text_color="gray").grid(row=1, column=2)
+        
+        # Scrollable list of present students
+        list_frame = ctk.CTkFrame(container, fg_color="transparent")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        
+        ctk.CTkLabel(list_frame, text="Present Students:",
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                    anchor="w").pack(fill="x", pady=(0, 10))
+        
+        scroll_frame = ctk.CTkScrollableFrame(list_frame, fg_color=THEME_COLORS['surface'], height=250)
+        scroll_frame.pack(fill="both", expand=True)
+        
+        if present:
+            for name in sorted(present):
+                row = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+                row.pack(fill="x", pady=2)
+                ctk.CTkLabel(row, text="✓", text_color=THEME_COLORS['success'],
+                            font=ctk.CTkFont(size=16)).pack(side="left", padx=10)
+                ctk.CTkLabel(row, text=name, anchor="w").pack(side="left", fill="x", expand=True)
+        else:
+            ctk.CTkLabel(scroll_frame, text="No students marked present",
+                        text_color="gray", font=ctk.CTkFont(slant="italic")).pack(pady=20)
+        
+        # Large OK button
+        ctk.CTkButton(container, text="OK", command=dialog.destroy,
+                     width=200, height=50, font=ctk.CTkFont(size=16, weight="bold"),
+                     fg_color=THEME_COLORS['primary'],
+                     hover_color=THEME_COLORS['primary_dark']).pack(pady=20)
+        
+        dialog.grab_set()
+        dialog.focus_set()
 
 if __name__ == "__main__":
     app = AttendanceApp()
